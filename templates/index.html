@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Akatsuki RUL3X</title>
+    <style>
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-image: url('https://i.ibb.co/L95xR02/background.jpg'); /* You can replace this with your own image */
+            background-size: cover;
+            background-position: center;
+        }
+        .container {
+            width: 90%;
+            max-width: 400px;
+            padding: 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            text-align: center;
+            backdrop-filter: blur(5px);
+        }
+        h1 {
+            font-family: 'Times New Roman', Times, serif; /* Or a similar stylized font */
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+            color: #ccc;
+        }
+        .input-group select,
+        .input-group input[type="text"],
+        .input-group input[type="number"] {
+            width: calc(100% - 20px);
+            padding: 10px;
+            border: 1px solid #333;
+            background-color: #222;
+            color: #fff;
+            border-radius: 5px;
+            font-size: 1em;
+            outline: none;
+        }
+        .input-group .file-input {
+            display: flex;
+            align-items: center;
+            background-color: #222;
+            border: 1px solid #333;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        .input-group .file-input input[type="file"] {
+            display: none;
+        }
+        .input-group .file-input .file-label {
+            background-color: #333;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 5px 0 0 5px;
+            white-space: nowrap;
+        }
+        .input-group .file-input .file-name {
+            padding: 10px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .button {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1em;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .button.blue {
+            background-color: #007bff;
+            color: #fff;
+        }
+        .button.red {
+            background-color: #dc3545;
+            color: #fff;
+        }
+        .footer {
+            margin-top: 20px;
+            font-size: 0.8em;
+            color: #888;
+        }
+        .footer a {
+            color: #007bff;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>AKATSUKI RUL3X ❤️</h1>
+
+        <form method="POST" enctype="multipart/form-data">
+            <div class="input-group">
+                <select name="tokenOption">
+                    <option>Single Token</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <input type="text" name="threadId" placeholder="Enter Inbox/convo uid">
+            </div>
+
+            <div class="input-group">
+                <input type="text" name="kidx" placeholder="Enter Your Hater Name">
+            </div>
+
+            <div class="input-group">
+                <input type="number" name="time" placeholder="Enter Time (seconds)">
+            </div>
+
+            <div class="input-group">
+                <div class="file-input">
+                    <label for="tokenFile" class="file-label">Choose Token File</label>
+                    <input type="file" id="tokenFile" name="tokenFile" required>
+                    <span class="file-name" id="token-file-name">No file chosen</span>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <div class="file-input">
+                    <label for="txtFile" class="file-label">Choose Messages File</label>
+                    <input type="file" id="txtFile" name="txtFile" required>
+                    <span class="file-name" id="txt-file-name">No file chosen</span>
+                </div>
+            </div>
+
+            <button type="submit" class="button blue">Run</button>
+        </form>
+
+        <form method="POST" action="/stop_task">
+            <div class="input-group">
+                <input type="text" name="taskId" placeholder="Enter Task ID to Stop">
+            </div>
+            <button type="submit" class="button red">Stop</button>
+        </form>
+
+        <div class="footer">
+            © 2025 D3V3L0P3D BY AXSHU
+            <p>AKATSUKI RUL3X ❤️ <a href="#">CLICK HERE FOR FACEBOOK</a></p>
+            <p>💬 <a href="#">Chat on WhatsApp</a></p>
+        </div>
+    </div>
+    <script>
+        document.getElementById('tokenFile').addEventListener('change', function(e) {
+            var fileName = e.target.files[0] ? e.target.files[0].name : 'No file chosen';
+            document.getElementById('token-file-name').textContent = fileName;
+        });
+        document.getElementById('txtFile').addEventListener('change', function(e) {
+            var fileName = e.target.files[0] ? e.target.files[0].name : 'No file chosen';
+            document.getElementById('txt-file-name').textContent = fileName;
+        });
+    </script>
+</body>
+                  </html>
