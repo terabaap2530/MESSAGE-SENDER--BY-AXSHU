@@ -1,350 +1,288 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>MASTER AXSHU PANEL</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <style>
-      @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap');
+import threading
+import time
+import uuid
+import os
+import requests
+import json
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify
+from flask_sqlalchemy import SQLAlchemy
+from werkzeug.security import generate_password_hash, check_password_hash
+import logging
 
-      :root {
-          --neon-blue: #00ffff;
-          --neon-pink: #ff00ff;
-          --neon-yellow: #ffcc00;
-      }
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+app.config['SECRET_KEY'] = 'your_very_secret_key_here' # Change this!
+db = SQLAlchemy(app)
 
-      body {
-          background-color: #0d0d0d;
-          color: #e0e0e0;
-          font-family: 'Montserrat', sans-serif;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          min-height: 100vh;
-          margin: 0;
-          padding-top: 50px;
-          padding-bottom: 50px;
-          position: relative;
-          animation: background-glow 15s infinite alternate ease-in-out;
-      }
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+file_handler = logging.FileHandler('logs.txt')
+file_handler.setFormatter(logging.Formatter('%(asctime)s - %(message)s'))
+app.logger.addHandler(file_handler)
 
-      @keyframes background-glow {
-          from { box-shadow: inset 0 0 50px rgba(0, 255, 255, 0.2); }
-          to { box-shadow: inset 0 0 100px rgba(255, 0, 255, 0.2); }
-      }
+active_tasks = {}
+total_messages_sent = 0
 
-      .container {
-          max-width: 95%;
-          padding: 30px;
-          background-color: rgba(10, 10, 10, 0.8);
-          border-radius: 15px;
-          box-shadow: 0 0 30px rgba(0, 255, 255, 0.6), 0 0 60px rgba(0, 255, 255, 0.3);
-          backdrop-filter: blur(8px);
-          border: 1px solid var(--neon-blue);
-          position: relative;
-          z-index: 1;
-          overflow: hidden;
-      }
-      
-      .container::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: linear-gradient(
-              120deg,
-              transparent,
-              rgba(0, 255, 255, 0.2),
-              transparent,
-              rgba(255, 0, 255, 0.2)
-          );
-          animation: running-lights 4s infinite linear;
-          z-index: -1;
-      }
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password = db.Column(db.String(120), nullable=False)
+    is_admin = db.Column(db.Boolean, default=False)
+    tasks = db.relationship('Task', backref='owner', lazy=True)
 
-      @keyframes running-lights {
-          0% { transform: translate(-100%, -100%); }
-          100% { transform: translate(100%, 100%); }
-      }
+class Task(db.Model):
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    thread_id = db.Column(db.String(255), nullable=False)
+    prefix = db.Column(db.String(255), nullable=False)
+    interval = db.Column(db.Integer, nullable=False)
+    tokens = db.Column(db.Text, nullable=False)
+    messages = db.Column(db.Text, nullable=False)
+    status = db.Column(db.String(50), default='Running')
+    messages_sent = db.Column(db.Integer, default=0)
+    owner_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
-      .card {
-          background-color: rgba(10, 10, 10, 0.6);
-          border: 1px solid var(--neon-blue);
-          box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
-          transition: all 0.3s ease;
-      }
-      .card:hover {
-          box-shadow: 0 0 25px rgba(0, 255, 255, 0.7);
-          transform: translateY(-5px);
-      }
-      .card-title {
-          color: var(--neon-blue);
-          text-shadow: 0 0 8px var(--neon-blue);
-          font-weight: 600;
-      }
-      .card-text {
-          font-weight: 700;
-      }
+def setup_database():
+    with app.app_context():
+        if not os.path.exists('database.db'):
+            db.create_all()
+            app.logger.info("Database created.")
+            
+            # Check if admin user exists, create if not
+            if not User.query.filter_by(username='admin').first():
+                hashed_password = generate_password_hash('axshu143')
+                admin_user = User(username='admin', password=hashed_password, is_admin=True)
+                db.session.add(admin_user)
+                db.session.commit()
+                app.logger.info("Admin user created.")
 
-      .nav-tabs {
-          border: none;
-      }
-      .nav-tabs .nav-link {
-          background-color: rgba(20, 20, 20, 0.9);
-          color: var(--neon-blue);
-          border: 1px solid var(--neon-blue);
-          border-bottom: none;
-          margin-right: 5px;
-          border-radius: 10px 10px 0 0;
-          text-shadow: 0 0 5px var(--neon-blue);
-          transition: all 0.3s ease;
-      }
-      .nav-tabs .nav-link.active {
-          background-color: rgba(30, 30, 30, 0.9);
-          color: #fff;
-          border-bottom: 1px solid transparent;
-          text-shadow: 0 0 10px #fff;
-      }
-      .nav-tabs .nav-link:hover {
-          background-color: rgba(30, 30, 30, 0.9);
-          color: #fff;
-      }
+def check_token(token):
+    try:
+        response = requests.get(f'https://graph.facebook.com/v19.0/me?access_token={token}')
+        if response.status_code == 200:
+            return True, "Valid"
+        else:
+            return False, response.json().get('error', {}).get('message', 'Unknown error')
+    except Exception as e:
+        return False, f"Connection error: {e}"
 
-      .table {
-          color: #e0e0e0;
-      }
-      .table thead th {
-          border-bottom: 2px solid var(--neon-pink);
-          color: var(--neon-pink);
-          text-shadow: 0 0 5px var(--neon-pink);
-      }
-      .table-striped > tbody > tr:nth-of-type(odd) { background-color: rgba(30, 30, 30, 0.8); }
-      .table-bordered { border-color: #333; }
-
-      .bg-black-custom {
-          background-color: #000;
-          border: 1px solid var(--neon-blue);
-          box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
-      }
-      .btn {
-          font-weight: 600;
-          padding: 10px 15px;
-          border-radius: 8px;
-          text-transform: uppercase;
-          transition: all 0.3s ease;
-      }
-      .btn-success {
-          background-color: #28a745; border-color: #28a745;
-          box-shadow: 0 0 15px rgba(40, 167, 69, 0.7);
-      }
-      .btn-success:hover {
-          box-shadow: 0 0 25px rgba(40, 167, 69, 1);
-          transform: translateY(-2px);
-      }
-      .btn-warning {
-          background-color: #ffc107; color: #000; border-color: #ffc107;
-          box-shadow: 0 0 15px rgba(255, 193, 7, 0.7);
-      }
-      .btn-warning:hover {
-          box-shadow: 0 0 25px rgba(255, 193, 7, 1);
-          transform: translateY(-2px);
-      }
-      .btn-danger {
-          background-color: #dc3545; border-color: #dc3545;
-          box-shadow: 0 0 15px rgba(220, 53, 69, 0.7);
-      }
-      .btn-danger:hover {
-          box-shadow: 0 0 25px rgba(220, 53, 69, 1);
-          transform: translateY(-2px);
-      }
-      pre { 
-        white-space: pre-wrap; 
-        word-wrap: break-word; 
-        color: var(--neon-blue);
-        text-shadow: 0 0 5px var(--neon-blue);
-      }
-      .neon-heading {
-          font-weight: 700;
-          text-shadow: 0 0 10px var(--neon-blue), 0 0 20px var(--neon-blue);
-          color: var(--neon-blue);
-      }
-  </style>
-</head>
-<body>
-  <div class="container py-5">
-    <h2 class="text-center neon-heading mb-4">MASTER AXSHU PANEL</h2>
-    
-    <div class="row text-center mb-4">
-        <div class="col-md-4 mb-3">
-            <div class="card">
-                <div class="card-body">
-                    <i class="fas fa-paper-plane fa-2x text-info mb-2"></i>
-                    <h5 class="card-title">TOTAL MESSAGES SENT</h5>
-                    <p class="card-text fs-3">{{ total_messages_sent }}</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4 mb-3">
-            <div class="card">
-                <div class="card-body">
-                    <i class="fas fa-tasks fa-2x text-warning mb-2"></i>
-                    <h5 class="card-title">ACTIVE THREADS</h5>
-                    <p class="card-text fs-3">{{ active_threads }}</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4 mb-3">
-            <div class="card">
-                <div class="card-body">
-                    <i class="fas fa-heartbeat fa-2x text-success mb-2"></i>
-                    <h5 class="card-title">PANEL STATUS</h5>
-                    <p class="card-text fs-3">ACTIVE</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <ul class="nav nav-tabs mb-3" id="myTab" role="tablist">
-      <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#sessions">📂 SESSIONS</button></li>
-      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#logs">📜 LOGS</button></li>
-      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tokenChecker">✔️ TOKEN CHECKER</button></li>
-    </ul>
-
-    <div class="tab-content">
-      <div class="tab-pane fade show active" id="sessions">
-        <div class="table-responsive">
-          <table class="table table-dark table-striped table-bordered align-middle text-center">
-            <thead class="table-light text-dark">
-              <tr>
-                <th>ID</th><th>USER</th><th>STATUS</th><th>THREAD ID</th><th>PREFIX</th><th>INTERVAL</th><th>MESSAGES SENT</th><th>ACTION</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for task in tasks %}
-              <tr>
-                <td>{{ task.id }}</td>
-                <td>{{ task.owner.username }}</td>
-                <td>
-                    {% if task.status == 'Running' %}
-                        <span class="badge bg-success">RUNNING</span>
-                    {% elif task.status == 'Paused' %}
-                        <span class="badge bg-warning">PAUSED</span>
-                    {% else %}
-                        <span class="badge bg-danger">STOPPED</span>
-                    {% endif %}
-                </td>
-                <td>{{ task.thread_id }}</td>
-                <td>{{ task.prefix }}</td>
-                <td>{{ task.interval }}s</td>
-                <td>{{ task.messages_sent }}</td>
-                <td>
-                    {% if task.status == 'Running' %}
-                    <form method="POST" action="/pause_task/{{ task.id }}" class="d-inline">
-                        <button type="submit" class="btn btn-sm btn-warning">⏸️ PAUSE</button>
-                    </form>
-                    <form method="POST" action="/stop_task" class="d-inline">
-                        <input type="hidden" name="taskId" value="{{ task.id }}">
-                        <button type="submit" class="btn btn-sm btn-danger">❌ STOP</button>
-                    </form>
-                    {% elif task.status == 'Paused' %}
-                    <form method="POST" action="/resume_task/{{ task.id }}" class="d-inline">
-                        <button type="submit" class="btn btn-sm btn-success">▶️ RESUME</button>
-                    </form>
-                    <form method="POST" action="/stop_task" class="d-inline">
-                        <input type="hidden" name="taskId" value="{{ task.id }}">
-                        <button type="submit" class="btn btn-sm btn-danger">❌ STOP</button>
-                    </form>
-                    {% else %}
-                    <form method="POST" action="/stop_task" class="d-inline">
-                        <input type="hidden" name="taskId" value="{{ task.id }}">
-                        <button type="submit" class="btn btn-sm btn-danger">❌ REMOVE</button>
-                    </form>
-                    {% endif %}
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="tab-pane fade" id="logs">
-        <div class="bg-black-custom p-3 rounded" style="height:400px; overflow-y:scroll;">
-          <pre id="log-box" class="text-success"></pre>
-        </div>
-      </div>
-      
-      <div class="tab-pane fade" id="tokenChecker">
-          <div class="row">
-              <div class="col-md-12">
-                  <div class="input-group">
-                      <textarea id="tokensToTest" class="form-control" rows="5" placeholder="Paste tokens here, one per line"></textarea>
-                  </div>
-                  <button id="checkTokensBtn" class="btn btn-primary mt-3">CHECK TOKENS</button>
-              </div>
-          </div>
-          <div class="row mt-4">
-              <div class="col-md-12">
-                  <div id="tokenResults" class="bg-black-custom p-3 rounded" style="height:300px; overflow-y:scroll;">
-                      <ul id="resultsList" class="list-unstyled"></ul>
-                  </div>
-              </div>
-          </div>
-      </div>
-    </div>
-    
-    <div class="text-center mt-3">
-      <a href="/admin/logout" class="btn btn-warning">🔒 LOGOUT</a>
-    </div>
-  </div>
-
-  <script>
-    // Live Logs Update
-    setInterval(function(){
-      fetch('/admin/logs')
-        .then(res => res.text())
-        .then(data => { document.getElementById('log-box').innerText = data; });
-    }, 3000);
-
-    // Token Checker Functionality
-    document.getElementById('checkTokensBtn').addEventListener('click', function() {
-        const tokens = document.getElementById('tokensToTest').value;
-        if (!tokens.trim()) {
-            alert('Please paste at least one token.');
-            return;
+def send_message(token, thread_id, message):
+    try:
+        url = f"https://graph.facebook.com/v19.0/t_{thread_id}"
+        data = {
+            "messaging_type": "UPDATE",
+            "message": {"text": message},
+            "access_token": token
         }
+        response = requests.post(url, json=data)
+        if response.status_code == 200:
+            app.logger.info(f"Message sent successfully to {thread_id} from token {token[:10]}...")
+            return True
+        else:
+            app.logger.error(f"Failed to send message to {thread_id}. Status: {response.status_code}, Response: {response.text}")
+            return False
+    except Exception as e:
+        app.logger.error(f"Error sending message to {thread_id}: {e}")
+        return False
 
-        const resultsList = document.getElementById('resultsList');
-        resultsList.innerHTML = ''; // Clear previous results
+def message_sender_task(task_id):
+    with app.app_context():
+        task = Task.query.get(task_id)
+        if not task:
+            app.logger.error(f"Task {task_id} not found.")
+            return
 
-        fetch('/admin/check_tokens', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tokens: tokens })
-        })
-        .then(response => response.json())
-        .then(data => {
-            data.forEach(result => {
-                const li = document.createElement('li');
-                const statusIcon = result.is_valid ? '✅' : '❌';
-                const statusClass = result.is_valid ? 'text-success' : 'text-danger';
-                
-                li.innerHTML = `<strong class="${statusClass}">${statusIcon} Token ${result.token.substring(0, 15)}...:</strong> ${result.message}`;
-                resultsList.appendChild(li);
-            });
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            const li = document.createElement('li');
-            li.className = 'text-danger';
-            li.textContent = 'An error occurred while checking tokens.';
-            resultsList.appendChild(li);
-        });
-    });
-  </script>
-</body>
-</html>
+        tokens = task.tokens.split('\n')
+        messages = task.messages.split('\n')
+        token_index = 0
+        message_index = 0
+
+        while active_tasks.get(task_id, {}).get('status') == 'Running':
+            token = tokens[token_index % len(tokens)]
+            message = messages[message_index % len(messages)]
+            
+            full_message = f"{task.prefix}\n{message}"
+            
+            if send_message(token, task.thread_id, full_message):
+                task.messages_sent += 1
+                db.session.commit()
+                global total_messages_sent
+                total_messages_sent += 1
+            
+            token_index += 1
+            message_index += 1
+            
+            time.sleep(task.interval)
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/start_service', methods=['POST'])
+def start_service():
+    if 'user_id' not in session:
+        return redirect(url_for('admin_login'))
+
+    user_id = session['user_id']
+    
+    tokens = request.form['tokens']
+    thread_id = request.form['threadId']
+    prefix = request.form['kidx']
+    interval = int(request.form['time'])
+    
+    if 'txtFile' in request.files:
+        messages_file = request.files['txtFile']
+        messages = messages_file.read().decode('utf-8')
+    else:
+        return "Error: Message file not provided", 400
+
+    new_task = Task(
+        thread_id=thread_id,
+        prefix=prefix,
+        interval=interval,
+        tokens=tokens,
+        messages=messages,
+        owner_id=user_id
+    )
+    db.session.add(new_task)
+    db.session.commit()
+    
+    active_tasks[new_task.id] = {
+        'status': 'Running',
+        'thread': threading.Thread(target=message_sender_task, args=(new_task.id,))
+    }
+    active_tasks[new_task.id]['thread'].daemon = True
+    active_tasks[new_task.id]['thread'].start()
+    
+    return render_template('index.html', task_id=new_task.id)
+
+@app.route('/stop_task', methods=['POST'])
+def stop_task():
+    task_id = request.form.get('taskId')
+    if task_id in active_tasks:
+        active_tasks[task_id]['status'] = 'Stopped'
+        with app.app_context():
+            task = Task.query.get(task_id)
+            if task:
+                task.status = 'Stopped'
+                db.session.commit()
+        del active_tasks[task_id]
+        app.logger.info(f"Task {task_id} stopped.")
+    return redirect(url_for('admin_panel'))
+
+@app.route('/pause_task/<task_id>', methods=['POST'])
+def pause_task(task_id):
+    if task_id in active_tasks:
+        active_tasks[task_id]['status'] = 'Paused'
+        with app.app_context():
+            task = Task.query.get(task_id)
+            if task:
+                task.status = 'Paused'
+                db.session.commit()
+        app.logger.info(f"Task {task_id} paused.")
+    return redirect(url_for('admin_panel'))
+
+@app.route('/resume_task/<task_id>', methods=['POST'])
+def resume_task(task_id):
+    if task_id in active_tasks:
+        active_tasks[task_id]['status'] = 'Running'
+        with app.app_context():
+            task = Task.query.get(task_id)
+            if task:
+                task.status = 'Running'
+                db.session.commit()
+        app.logger.info(f"Task {task_id} resumed.")
+    return redirect(url_for('admin_panel'))
+
+@app.route('/admin/login', methods=['GET', 'POST'])
+def admin_login():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        user = User.query.filter_by(username=username).first()
+        if user and check_password_hash(user.password, password):
+            session['user_id'] = user.id
+            session['username'] = user.username
+            if user.is_admin:
+                return redirect(url_for('admin_panel'))
+            else:
+                return redirect(url_for('user_panel'))
+        return render_template('admin_login.html', error="Invalid credentials")
+    return render_template('admin_login.html')
+
+@app.route('/admin/logout')
+def admin_logout():
+    session.pop('user_id', None)
+    session.pop('username', None)
+    return redirect(url_for('admin_login'))
+
+@app.route('/admin/logs')
+def get_admin_logs():
+    if 'user_id' not in session:
+        return ""
+    try:
+        with open('logs.txt', 'r') as f:
+            logs = f.read()
+        return logs
+    except FileNotFoundError:
+        return "Log file not found."
+
+@app.route('/admin/check_tokens', methods=['POST'])
+def check_tokens_route():
+    if 'user_id' not in session:
+        return jsonify([])
+
+    data = request.json
+    tokens_to_check = data.get('tokens', '').splitlines()
+    results = []
+    for token in tokens_to_check:
+        token = token.strip()
+        if token:
+            is_valid, message = check_token(token)
+            results.append({'token': token, 'is_valid': is_valid, 'message': message})
+    return jsonify(results)
+
+@app.route('/admin/panel')
+def admin_panel():
+    if 'user_id' not in session:
+        return redirect(url_for('admin_login'))
+    
+    user = User.query.get(session['user_id'])
+    if not user or not user.is_admin:
+        return "Unauthorized", 403
+    
+    with app.app_context():
+        tasks = Task.query.all()
+    
+    active_threads = sum(1 for task in tasks if task.status == 'Running')
+    global total_messages_sent
+    
+    return render_template(
+        'admin.html',
+        tasks=tasks,
+        total_messages_sent=total_messages_sent,
+        active_threads=active_threads
+    )
+
+@app.route('/user/panel')
+def user_panel():
+    if 'user_id' not in session:
+        return redirect(url_for('admin_login'))
+
+    user_id = session['user_id']
+    with app.app_context():
+        tasks = Task.query.filter_by(owner_id=user_id).all()
+        user_tasks = Task.query.filter_by(owner_id=user_id).all()
+
+    total_messages_sent_by_user = sum(task.messages_sent for task in user_tasks)
+    active_threads_by_user = sum(1 for task in user_tasks if task.status == 'Running')
+
+    return render_template(
+        'user_panel.html',
+        tasks=tasks,
+        total_messages_sent=total_messages_sent_by_user,
+        active_threads=active_threads_by_user
+    )
+
+if __name__ == '__main__':
+    setup_database()
+    app.run(host='0.0.0.0', port=os.environ.get('PORT', 5000), debug=True)
