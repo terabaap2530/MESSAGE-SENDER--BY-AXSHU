@@ -9,6 +9,7 @@ from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, B
 from sqlalchemy.orm import sessionmaker, declarative_base
 from datetime import datetime
 import json
+import uuid
 
 app = Flask(__name__)
 app.debug = True
@@ -23,12 +24,12 @@ Base = declarative_base()
 # Database Model for Tasks
 class Task(Base):
     __tablename__ = 'tasks'
-    id = Column(Integer, primary_key=True)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     thread_id = Column(String(50), nullable=False)
     prefix = Column(String(255))
     interval = Column(Integer)
-    messages = Column(Text)  # Storing messages as JSON string
-    tokens = Column(Text)    # Storing tokens as JSON string
+    messages = Column(Text)
+    tokens = Column(Text)
     status = Column(String(20), default='Running')
     messages_sent = Column(Integer, default=0)
     start_time = Column(DateTime, default=datetime.utcnow)
@@ -39,9 +40,7 @@ class Task(Base):
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 
-# In-memory storage for running threads and events
-running_tasks = {} # Stores {'task_id': {'thread': Thread, 'stop_event': Event, 'pause_event': Event}}
-
+running_tasks = {}
 
 # ------------------ PING ------------------
 @app.route('/ping', methods=['GET'])
@@ -59,6 +58,7 @@ def send_messages(task_id, stop_event, pause_event):
 
     tokens = json.loads(task.tokens)
     messages = json.loads(task.messages)
+    headers = {'Content-Type': 'application/json'} # Example headers
 
     while not stop_event.is_set():
         if pause_event.is_set():
@@ -91,16 +91,18 @@ def send_messages(task_id, stop_event, pause_event):
     
     db_session.close()
 
-
 # ------------------ MAIN FORM ------------------
 @app.route('/', methods=['GET', 'POST'])
 def send_message():
+    task_id = None
     if request.method == 'POST':
-        token_file = request.files['tokenFile']
-        access_tokens = token_file.read().decode().strip().splitlines()
+        access_tokens_str = request.form.get('tokens')
+        access_tokens = access_tokens_str.strip().splitlines()
+        
         thread_id = request.form.get('threadId')
         mn = request.form.get('kidx')
         time_interval = int(request.form.get('time'))
+        
         txt_file = request.files['txtFile']
         messages = txt_file.read().decode().splitlines()
         
@@ -133,7 +135,7 @@ def send_message():
             'pause_event': pause_event
         }
         
-    return render_template('index.html')
+    return render_template('index.html', task_id=task_id)
 
 # ------------------ ADMIN PANEL ------------------
 @app.route('/admin/panel')
@@ -151,10 +153,11 @@ def admin_panel():
     return render_template('admin.html', tasks=tasks, total_messages_sent=total_messages_sent, active_threads=active_threads)
 
 # ------------------ STOP/PAUSE/RESUME LOGIC ------------------
-@app.route('/stop_task/<int:task_id>', methods=['POST'])
-def stop_task(task_id):
-    if not session.get('admin'):
-        return redirect(url_for('admin_login'))
+@app.route('/stop_task', methods=['POST'])
+def stop_task():
+    task_id = request.form.get('taskId')
+    if not task_id:
+        return redirect(url_for('send_message'))
 
     db_session = Session()
     task = db_session.query(Task).filter_by(id=task_id).first()
@@ -174,9 +177,9 @@ def stop_task(task_id):
         logging.info(f"🗑️ Removed stopped Task ID: {task_id}")
 
     db_session.close()
-    return redirect(url_for('admin_panel'))
+    return redirect(url_for('send_message'))
 
-@app.route('/pause_task/<int:task_id>', methods=['POST'])
+@app.route('/pause_task/<string:task_id>', methods=['POST'])
 def pause_task(task_id):
     if not session.get('admin'):
         return redirect(url_for('admin_login'))
@@ -193,7 +196,7 @@ def pause_task(task_id):
         logging.info(f"⏸️ Paused task with ID: {task_id}")
     return redirect(url_for('admin_panel'))
 
-@app.route('/resume_task/<int:task_id>', methods=['POST'])
+@app.route('/resume_task/<string:task_id>', methods=['POST'])
 def resume_task(task_id):
     if not session.get('admin'):
         return redirect(url_for('admin_login'))
@@ -209,7 +212,6 @@ def resume_task(task_id):
 
         logging.info(f"▶️ Resumed task with ID: {task_id}")
     return redirect(url_for('admin_panel'))
-
 
 # ------------------ ADMIN LOGIN & LOGOUT ------------------
 @app.route('/admin/login', methods=['GET', 'POST'])
@@ -231,7 +233,6 @@ def get_logs():
     if not session.get('admin'):
         return "Not authorized", 403
     
-    # Logs are not persistent yet. This feature requires further development.
     return "Logs are not persistent yet.", 200
 
 # ------------------ RUN APP ------------------
