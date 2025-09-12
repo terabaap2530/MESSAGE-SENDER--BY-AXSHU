@@ -92,6 +92,9 @@
             text-transform: uppercase;
             font-weight: bold;
             margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .button.blue {
             background-color: #007bff;
@@ -104,6 +107,9 @@
         .button.admin {
             background-color: #ffc107;
             color: #000;
+            width: auto;
+            font-size: 0.9em;
+            padding: 8px 12px;
         }
         .footer {
             margin-top: 20px;
@@ -126,7 +132,7 @@
             position: absolute;
             top: 20px;
             right: 20px;
-            z-index: 1000; /* Taaki dusre elements ke upar rahe */
+            z-index: 1000;
         }
     </style>
 </head>
@@ -168,7 +174,9 @@
                 </div>
             </div>
 
-            <button type="submit" class="button blue">Run</button>
+            <button type="submit" class="button blue">
+                <span style="margin-right: 8px;">🚀</span> START SENDING
+            </button>
         </form>
 
         <form method="POST" action="/stop_task">
