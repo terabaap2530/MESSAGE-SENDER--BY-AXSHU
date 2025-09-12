@@ -1,3 +1,4 @@
-Flask
-requests
-SQLAlchemy
+Flask==3.0.3
+Flask-SQLAlchemy==3.1.1
+requests==2.32.3
+Werkzeug==3.0.3
