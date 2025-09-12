@@ -1,349 +1,428 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>User Dashboard - {{ session.username }}</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <style>
-      @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap');
+    <meta charset="UTF-8">
+    <title>User Panel</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap');
 
-      :root {
-          --neon-blue: #00ffff;
-          --neon-pink: #ff00ff;
-          --neon-yellow: #ffcc00;
-      }
-
-      body {
-          background-color: #0d0d0d;
-          color: #e0e0e0;
-          font-family: 'Montserrat', sans-serif;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          min-height: 100vh;
-          margin: 0;
-          padding-top: 50px;
-          padding-bottom: 50px;
-          position: relative;
-          animation: background-glow 15s infinite alternate ease-in-out;
-      }
-
-      @keyframes background-glow {
-          from { box-shadow: inset 0 0 50px rgba(0, 255, 255, 0.2); }
-          to { box-shadow: inset 0 0 100px rgba(255, 0, 255, 0.2); }
-      }
-
-      .container {
-          max-width: 95%;
-          padding: 30px;
-          background-color: rgba(10, 10, 10, 0.8);
-          border-radius: 15px;
-          box-shadow: 0 0 30px rgba(0, 255, 255, 0.6), 0 0 60px rgba(0, 255, 255, 0.3);
-          backdrop-filter: blur(8px);
-          border: 1px solid var(--neon-blue);
-          position: relative;
-          z-index: 1;
-          overflow: hidden;
-      }
-      
-      .container::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: linear-gradient(
-              120deg,
-              transparent,
-              rgba(0, 255, 255, 0.2),
-              transparent,
-              rgba(255, 0, 255, 0.2)
-          );
-          animation: running-lights 4s infinite linear;
-          z-index: -1;
-      }
-
-      @keyframes running-lights {
-          0% { transform: translate(-100%, -100%); }
-          100% { transform: translate(100%, 100%); }
-      }
-
-      .card {
-          background-color: rgba(10, 10, 10, 0.6);
-          border: 1px solid var(--neon-blue);
-          box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
-          transition: all 0.3s ease;
-      }
-      .card:hover {
-          box-shadow: 0 0 25px rgba(0, 255, 255, 0.7);
-          transform: translateY(-5px);
-      }
-      .card-title {
-          color: var(--neon-blue);
-          text-shadow: 0 0 8px var(--neon-blue);
-          font-weight: 600;
-      }
-      .card-text {
-          font-weight: 700;
-      }
-
-      .nav-tabs {
-          border: none;
-      }
-      .nav-tabs .nav-link {
-          background-color: rgba(20, 20, 20, 0.9);
-          color: var(--neon-blue);
-          border: 1px solid var(--neon-blue);
-          border-bottom: none;
-          margin-right: 5px;
-          border-radius: 10px 10px 0 0;
-          text-shadow: 0 0 5px var(--neon-blue);
-          transition: all 0.3s ease;
-      }
-      .nav-tabs .nav-link.active {
-          background-color: rgba(30, 30, 30, 0.9);
-          color: #fff;
-          border-bottom: 1px solid transparent;
-          text-shadow: 0 0 10px #fff;
-      }
-      .nav-tabs .nav-link:hover {
-          background-color: rgba(30, 30, 30, 0.9);
-          color: #fff;
-      }
-
-      .table {
-          color: #e0e0e0;
-      }
-      .table thead th {
-          border-bottom: 2px solid var(--neon-pink);
-          color: var(--neon-pink);
-          text-shadow: 0 0 5px var(--neon-pink);
-      }
-      .table-striped > tbody > tr:nth-of-type(odd) { background-color: rgba(30, 30, 30, 0.8); }
-      .table-bordered { border-color: #333; }
-
-      .bg-black-custom {
-          background-color: #000;
-          border: 1px solid var(--neon-blue);
-          box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
-      }
-      .btn {
-          font-weight: 600;
-          padding: 10px 15px;
-          border-radius: 8px;
-          text-transform: uppercase;
-          transition: all 0.3s ease;
-      }
-      .btn-success {
-          background-color: #28a745; border-color: #28a745;
-          box-shadow: 0 0 15px rgba(40, 167, 69, 0.7);
-      }
-      .btn-success:hover {
-          box-shadow: 0 0 25px rgba(40, 167, 69, 1);
-          transform: translateY(-2px);
-      }
-      .btn-warning {
-          background-color: #ffc107; color: #000; border-color: #ffc107;
-          box-shadow: 0 0 15px rgba(255, 193, 7, 0.7);
-      }
-      .btn-warning:hover {
-          box-shadow: 0 0 25px rgba(255, 193, 7, 1);
-          transform: translateY(-2px);
-      }
-      .btn-danger {
-          background-color: #dc3545; border-color: #dc3545;
-          box-shadow: 0 0 15px rgba(220, 53, 69, 0.7);
-      }
-      .btn-danger:hover {
-          box-shadow: 0 0 25px rgba(220, 53, 69, 1);
-          transform: translateY(-2px);
-      }
-      pre { 
-        white-space: pre-wrap; 
-        word-wrap: break-word; 
-        color: var(--neon-blue);
-        text-shadow: 0 0 5px var(--neon-blue);
-      }
-      .neon-heading {
-          font-weight: 700;
-          text-shadow: 0 0 10px var(--neon-blue), 0 0 20px var(--neon-blue);
-          color: var(--neon-blue);
-      }
-  </style>
-</head>
-<body>
-  <div class="container py-5">
-    <h2 class="text-center neon-heading mb-4">User Panel - {{ session.username }}</h2>
-    
-    <div class="row text-center mb-4">
-        <div class="col-md-4 mb-3">
-            <div class="card">
-                <div class="card-body">
-                    <i class="fas fa-paper-plane fa-2x text-info mb-2"></i>
-                    <h5 class="card-title">YOUR MESSAGES SENT</h5>
-                    <p class="card-text fs-3">{{ total_messages_sent }}</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4 mb-3">
-            <div class="card">
-                <div class="card-body">
-                    <i class="fas fa-tasks fa-2x text-warning mb-2"></i>
-                    <h5 class="card-title">YOUR ACTIVE THREADS</h5>
-                    <p class="card-text fs-3">{{ active_threads }}</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4 mb-3">
-            <div class="card">
-                <div class="card-body">
-                    <i class="fas fa-heartbeat fa-2x text-success mb-2"></i>
-                    <h5 class="card-title">PANEL STATUS</h5>
-                    <p class="card-text fs-3">ACTIVE</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <ul class="nav nav-tabs mb-3" id="myTab" role="tablist">
-      <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#sessions">📂 YOUR SESSIONS</button></li>
-      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#logs">📜 LOGS</button></li>
-      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tokenChecker">✔️ TOKEN CHECKER</button></li>
-    </ul>
-
-    <div class="tab-content">
-      <div class="tab-pane fade show active" id="sessions">
-        <div class="table-responsive">
-          <table class="table table-dark table-striped table-bordered align-middle text-center">
-            <thead class="table-light text-dark">
-              <tr>
-                <th>ID</th><th>STATUS</th><th>THREAD ID</th><th>PREFIX</th><th>INTERVAL</th><th>MESSAGES SENT</th><th>ACTION</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for task in tasks %}
-              <tr>
-                <td>{{ task.id }}</td>
-                <td>
-                    {% if task.status == 'Running' %}
-                        <span class="badge bg-success">RUNNING</span>
-                    {% elif task.status == 'Paused' %}
-                        <span class="badge bg-warning">PAUSED</span>
-                    {% else %}
-                        <span class="badge bg-danger">STOPPED</span>
-                    {% endif %}
-                </td>
-                <td>{{ task.thread_id }}</td>
-                <td>{{ task.prefix }}</td>
-                <td>{{ task.interval }}s</td>
-                <td>{{ task.messages_sent }}</td>
-                <td>
-                    {% if task.status == 'Running' %}
-                    <form method="POST" action="/pause_task/{{ task.id }}" class="d-inline">
-                        <button type="submit" class="btn btn-sm btn-warning">⏸️ PAUSE</button>
-                    </form>
-                    <form method="POST" action="/stop_task" class="d-inline">
-                        <input type="hidden" name="taskId" value="{{ task.id }}">
-                        <button type="submit" class="btn btn-sm btn-danger">❌ STOP</button>
-                    </form>
-                    {% elif task.status == 'Paused' %}
-                    <form method="POST" action="/resume_task/{{ task.id }}" class="d-inline">
-                        <button type="submit" class="btn btn-sm btn-success">▶️ RESUME</button>
-                    </form>
-                    <form method="POST" action="/stop_task" class="d-inline">
-                        <input type="hidden" name="taskId" value="{{ task.id }}">
-                        <button type="submit" class="btn btn-sm btn-danger">❌ STOP</button>
-                    </form>
-                    {% else %}
-                    <form method="POST" action="/stop_task" class="d-inline">
-                        <input type="hidden" name="taskId" value="{{ task.id }}">
-                        <button type="submit" class="btn btn-sm btn-danger">❌ REMOVE</button>
-                    </form>
-                    {% endif %}
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="tab-pane fade" id="logs">
-        <div class="bg-black-custom p-3 rounded" style="height:400px; overflow-y:scroll;">
-          <pre id="log-box" class="text-success"></pre>
-        </div>
-      </div>
-      
-      <div class="tab-pane fade" id="tokenChecker">
-          <div class="row">
-              <div class="col-md-12">
-                  <div class="input-group">
-                      <textarea id="tokensToTest" class="form-control" rows="5" placeholder="Paste tokens here, one per line"></textarea>
-                  </div>
-                  <button id="checkTokensBtn" class="btn btn-primary mt-3">CHECK TOKENS</button>
-              </div>
-          </div>
-          <div class="row mt-4">
-              <div class="col-md-12">
-                  <div id="tokenResults" class="bg-black-custom p-3 rounded" style="height:300px; overflow-y:scroll;">
-                      <ul id="resultsList" class="list-unstyled"></ul>
-                  </div>
-              </div>
-          </div>
-      </div>
-    </div>
-    
-    <div class="text-center mt-3">
-      <a href="/admin/logout" class="btn btn-warning">🔒 LOGOUT</a>
-    </div>
-  </div>
-
-  <script>
-    // Live Logs Update
-    setInterval(function(){
-      fetch('/admin/logs')
-        .then(res => res.text())
-        .then(data => { document.getElementById('log-box').innerText = data; });
-    }, 3000);
-
-    // Token Checker Functionality
-    document.getElementById('checkTokensBtn').addEventListener('click', function() {
-        const tokens = document.getElementById('tokensToTest').value;
-        if (!tokens.trim()) {
-            alert('Please paste at least one token.');
-            return;
+        :root {
+            --neon-blue: #00ffff;
+            --neon-pink: #ff00ff;
+            --neon-yellow: #ffcc00;
         }
 
-        const resultsList = document.getElementById('resultsList');
-        resultsList.innerHTML = ''; // Clear previous results
+        body {
+            background-color: #0d0d0d;
+            color: #e0e0e0;
+            font-family: 'Montserrat', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding-top: 50px;
+            padding-bottom: 50px;
+            position: relative;
+            animation: background-glow 15s infinite alternate ease-in-out;
+        }
 
-        fetch('/admin/check_tokens', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tokens: tokens })
-        })
-        .then(response => response.json())
-        .then(data => {
-            data.forEach(result => {
-                const li = document.createElement('li');
-                const statusIcon = result.is_valid ? '✅' : '❌';
-                const statusClass = result.is_valid ? 'text-success' : 'text-danger';
-                
-                li.innerHTML = `<strong class="${statusClass}">${statusIcon} Token ${result.token.substring(0, 15)}...:</strong> ${result.message}`;
-                resultsList.appendChild(li);
-            });
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            const li = document.createElement('li');
-            li.className = 'text-danger';
-            li.textContent = 'An error occurred while checking tokens.';
-            resultsList.appendChild(li);
+        @keyframes background-glow {
+            from { box-shadow: inset 0 0 50px rgba(0, 255, 255, 0.2); }
+            to { box-shadow: inset 0 0 100px rgba(255, 0, 255, 0.2); }
+        }
+
+        .container {
+            max-width: 95%;
+            padding: 30px;
+            background-color: rgba(10, 10, 10, 0.8);
+            border-radius: 15px;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.6), 0 0 60px rgba(0, 255, 255, 0.3);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--neon-blue);
+            position: relative;
+            z-index: 1;
+            overflow: hidden;
+        }
+        
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                120deg,
+                transparent,
+                rgba(0, 255, 255, 0.2),
+                transparent,
+                rgba(255, 0, 255, 0.2)
+            );
+            animation: running-lights 4s infinite linear;
+            z-index: -1;
+        }
+
+        @keyframes running-lights {
+            0% { transform: translate(-100%, -100%); }
+            100% { transform: translate(100%, 100%); }
+        }
+
+        .card {
+            background-color: rgba(10, 10, 10, 0.6);
+            border: 1px solid var(--neon-blue);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
+            transition: all 0.3s ease;
+        }
+        .card:hover {
+            box-shadow: 0 0 25px rgba(0, 255, 255, 0.7);
+            transform: translateY(-5px);
+        }
+        .card-title {
+            color: var(--neon-blue);
+            text-shadow: 0 0 8px var(--neon-blue);
+            font-weight: 600;
+        }
+        .card-text {
+            font-weight: 700;
+        }
+
+        .nav-tabs {
+            border: none;
+        }
+        .nav-tabs .nav-link {
+            background-color: rgba(20, 20, 20, 0.9);
+            color: var(--neon-blue);
+            border: 1px solid var(--neon-blue);
+            border-bottom: none;
+            margin-right: 5px;
+            border-radius: 10px 10px 0 0;
+            text-shadow: 0 0 5px var(--neon-blue);
+            transition: all 0.3s ease;
+        }
+        .nav-tabs .nav-link.active {
+            background-color: rgba(30, 30, 30, 0.9);
+            color: #fff;
+            border-bottom: 1px solid transparent;
+            text-shadow: 0 0 10px #fff;
+        }
+        .nav-tabs .nav-link:hover {
+            background-color: rgba(30, 30, 30, 0.9);
+            color: #fff;
+        }
+
+        .table {
+            color: #e0e0e0;
+        }
+        .table thead th {
+            border-bottom: 2px solid var(--neon-pink);
+            color: var(--neon-pink);
+            text-shadow: 0 0 5px var(--neon-pink);
+        }
+        .table-striped > tbody > tr:nth-of-type(odd) { background-color: rgba(30, 30, 30, 0.8); }
+        .table-bordered { border-color: #333; }
+        .bg-black-custom {
+            background-color: #000;
+            border: 1px solid var(--neon-blue);
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+        .btn {
+            font-weight: 600;
+            padding: 10px 15px;
+            border-radius: 8px;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+        }
+        .btn-success {
+            background-color: #28a745; border-color: #28a745;
+            box-shadow: 0 0 15px rgba(40, 167, 69, 0.7);
+        }
+        .btn-success:hover {
+            box-shadow: 0 0 25px rgba(40, 167, 69, 1);
+            transform: translateY(-2px);
+        }
+        .btn-warning {
+            background-color: #ffc107; color: #000; border-color: #ffc107;
+            box-shadow: 0 0 15px rgba(255, 193, 7, 0.7);
+        }
+        .btn-warning:hover {
+            box-shadow: 0 0 25px rgba(255, 193, 7, 1);
+            transform: translateY(-2px);
+        }
+        .btn-danger {
+            background-color: #dc3545; border-color: #dc3545;
+            box-shadow: 0 0 15px rgba(220, 53, 69, 0.7);
+        }
+        .btn-danger:hover {
+            box-shadow: 0 0 25px rgba(220, 53, 69, 1);
+            transform: translateY(-2px);
+        }
+        pre { 
+          white-space: pre-wrap; 
+          word-wrap: break-word; 
+          color: var(--neon-blue);
+          text-shadow: 0 0 5px var(--neon-blue);
+        }
+        .neon-heading {
+            font-weight: 700;
+            text-shadow: 0 0 10px var(--neon-blue), 0 0 20px var(--neon-blue);
+            color: var(--neon-blue);
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+            color: var(--neon-blue);
+            text-align: left;
+            text-shadow: 0 0 5px var(--neon-blue);
+        }
+        .input-group input[type="text"],
+        .input-group input[type="number"],
+        .input-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--neon-blue);
+            background-color: #1a1a1a;
+            color: var(--neon-blue);
+            border-radius: 8px;
+            font-size: 1em;
+            outline: none;
+            box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+            transition: all 0.3s ease;
+        }
+        .input-group input[type="text"]:focus,
+        .input-group input[type="number"]:focus,
+        .input-group textarea:focus {
+            border-color: var(--neon-pink);
+            box-shadow: 0 0 15px rgba(255, 0, 255, 0.7);
+        }
+        .input-group textarea {
+            resize: vertical;
+        }
+        .file-input {
+            display: flex;
+            align-items: center;
+            background-color: #1a1a1a;
+            border: 1px solid var(--neon-blue);
+            border-radius: 8px;
+            box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+        }
+        .file-input input[type="file"] {
+            display: none;
+        }
+        .file-input .file-label {
+            background-color: #0056b3;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 8px 0 0 8px;
+            white-space: nowrap;
+            color: #fff;
+            font-weight: 600;
+            text-shadow: 0 0 5px #fff;
+            transition: background-color 0.3s ease;
+        }
+        .file-input .file-label:hover {
+            background-color: #007bff;
+        }
+        .file-input .file-name {
+            padding: 10px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: var(--neon-blue);
+        }
+        #taskIdDisplay {
+            margin-bottom: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            background-color: rgba(30, 30, 30, 0.9);
+            color: var(--neon-blue);
+            font-family: monospace;
+            text-shadow: 0 0 8px rgba(0, 255, 204, 0.7);
+            border: 1px solid var(--neon-blue);
+            box-shadow: 0 0 10px rgba(0, 255, 204, 0.5);
+        }
+        .button-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .button-content img {
+            width: 20px;
+            margin-right: 8px;
+        }
+        .footer {
+            margin-top: 50px;
+            font-size: 0.7em;
+            color: #888;
+            text-shadow: 0 0 5px rgba(136, 136, 136, 0.5);
+            text-align: center;
+        }
+        .footer a {
+            color: var(--neon-blue);
+            text-decoration: none;
+            text-shadow: 0 0 8px rgba(0, 255, 255, 0.8);
+            transition: text-shadow 0.3s ease;
+        }
+        .footer a:hover {
+            text-shadow: 0 0 15px rgba(0, 255, 255, 1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-5">
+        <h2 class="text-center neon-heading mb-4">User Panel - {{ session.username }}</h2>
+        
+        <ul class="nav nav-tabs mb-3" id="myTab" role="tablist">
+            <li class="nav-item">
+                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#dashboard">📊 DASHBOARD</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#sessions">📂 YOUR SESSIONS</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#sender">🚀 MESSAGE SENDER</button>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="dashboard">
+                <div class="row text-center mb-4">
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <i class="fas fa-paper-plane fa-2x text-info mb-2"></i>
+                                <h5 class="card-title">YOUR MESSAGES SENT</h5>
+                                <p class="card-text fs-3">{{ total_messages_sent }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <i class="fas fa-tasks fa-2x text-warning mb-2"></i>
+                                <h5 class="card-title">YOUR ACTIVE THREADS</h5>
+                                <p class="card-text fs-3">{{ active_threads }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="sessions">
+                <div class="table-responsive">
+                    <table class="table table-dark table-striped table-bordered align-middle text-center">
+                        <thead>
+                            <tr>
+                                <th>ID</th><th>STATUS</th><th>THREAD ID</th><th>PREFIX</th><th>INTERVAL</th><th>MESSAGES SENT</th><th>ACTION</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for task in tasks %}
+                            <tr>
+                                <td>{{ task.id[:8] }}...</td>
+                                <td>
+                                    {% if task.status == 'Running' %}
+                                        <span class="badge bg-success">RUNNING</span>
+                                    {% elif task.status == 'Paused' %}
+                                        <span class="badge bg-warning">PAUSED</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">STOPPED</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ task.thread_id }}</td>
+                                <td>{{ task.prefix }}</td>
+                                <td>{{ task.interval }}s</td>
+                                <td>{{ task.messages_sent }}</td>
+                                <td>
+                                    {% if task.status == 'Running' %}
+                                    <form method="POST" action="/pause_task/{{ task.id }}" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-warning">⏸️ PAUSE</button>
+                                    </form>
+                                    <form method="POST" action="/stop_task" class="d-inline">
+                                        <input type="hidden" name="taskId" value="{{ task.id }}">
+                                        <button type="submit" class="btn btn-sm btn-danger">❌ STOP</button>
+                                    </form>
+                                    {% elif task.status == 'Paused' %}
+                                    <form method="POST" action="/resume_task/{{ task.id }}" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-success">▶️ RESUME</button>
+                                    </form>
+                                    <form method="POST" action="/stop_task" class="d-inline">
+                                        <input type="hidden" name="taskId" value="{{ task.id }}">
+                                        <button type="submit" class="btn btn-sm btn-danger">❌ STOP</button>
+                                    </form>
+                                    {% else %}
+                                    <form method="POST" action="/stop_task" class="d-inline">
+                                        <input type="hidden" name="taskId" value="{{ task.id }}">
+                                        <button type="submit" class="btn btn-sm btn-danger">❌ REMOVE</button>
+                                    </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="tab-pane fade" id="sender">
+                <form method="POST" action="/start_service" enctype="multipart/form-data">
+                    <div class="input-group mb-3">
+                        <label for="tokens">PASTE TOKENS HERE:</label>
+                        <textarea id="tokens" name="tokens" rows="4" class="form-control" required placeholder="Paste each token on a new line"></textarea>
+                    </div>
+
+                    <div class="input-group mb-3">
+                        <input type="text" name="threadId" class="form-control" placeholder="ENTER INBOX/CONVO UID" required>
+                    </div>
+
+                    <div class="input-group mb-3">
+                        <input type="text" name="kidx" class="form-control" placeholder="ENTER YOUR HATER NAME" required>
+                    </div>
+
+                    <div class="input-group mb-3">
+                        <input type="number" name="time" class="form-control" placeholder="ENTER TIME (SECONDS)" required>
+                    </div>
+
+                    <div class="input-group mb-3">
+                        <div class="file-input">
+                            <label for="txtFile" class="file-label">CHOOSE MESSAGES FILE</label>
+                            <input type="file" id="txtFile" name="txtFile" required>
+                            <span class="file-name" id="txt-file-name">No file chosen</span>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-info w-100 mt-3">
+                        <div class="button-content">
+                            <span style="margin-right: 8px;">🚀</span> START SENDING
+                        </div>
+                    </button>
+                </form>
+            </div>
+        </div>
+    
+        <div class="text-center mt-3">
+            <a href="/user/logout" class="btn btn-warning">🔒 LOGOUT</a>
+        </div>
+        
+    </div>
+
+    <div class="footer">
+        <p>© 2025 DEVELOPED WITH ❤️ BY AXSHU</p>
+        <p>
+            AXSHU RAJPUT <a href="https://www.facebook.com/profile.php?id=61574791744025" target="_blank">CLICK HERE FOR FACEBOOK</a>
+        </p>
+        <p>💬 <a href="#">CHAT ON WHATSAPP</a></p>
+    </div>
+
+    <script>
+        document.getElementById('txtFile').addEventListener('change', function(e) {
+            var fileName = e.target.files[0] ? e.target.files[0].name : 'No file chosen';
+            document.getElementById('txt-file-name').textContent = fileName;
         });
-    });
-  </script>
+    </script>
 </body>
-</html>
+  </html>
