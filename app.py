@@ -187,13 +187,12 @@ def send_messages_thread(task_id):
 # ====================
 @app.route('/', methods=['GET', 'POST'])
 def index():
+    if 'user_id' not in session:
+        return redirect(url_for('admin_login'))
+
     task_id = request.args.get('task_id')
     if request.method == 'POST':
         if 'tokens' in request.form:
-            # Check if user is logged in
-            if 'user_id' not in session:
-                return redirect(url_for('admin_login', redirect_to='index'))
-            
             user_id = session['user_id']
             tokens_raw = request.form.get('tokens').strip()
             tokens_list = [token.strip() for token in tokens_raw.split('\n') if token.strip()]
@@ -228,17 +227,7 @@ def index():
             thread.start()
             active_threads[new_task.id] = thread
             
-            return redirect(url_for('index', task_id=new_task.id))
-        
-        elif 'taskId' in request.form:
-            task_id_to_stop = request.form.get('taskId')
-            task_to_stop = Task.query.get(task_id_to_stop)
-            # Check if the task exists and belongs to the current user
-            if task_to_stop and task_to_stop.user_id == session.get('user_id'):
-                task_to_stop.status = 'Stopped'
-                db.session.commit()
-                add_log(f"User requested to stop task: {task_id_to_stop}")
-            return redirect(url_for('index'))
+            return redirect(url_for('user_panel', task_id=new_task.id))
     
     return render_template('index.html', task_id=task_id)
 
@@ -247,29 +236,26 @@ def index():
 def stop_task():
     task_id = request.form.get('taskId')
     task_to_stop = Task.query.get(task_id)
-    # Check if the task exists and belongs to the current user
     if task_to_stop and task_to_stop.user_id == session.get('user_id'):
         task_to_stop.status = 'Stopped'
         db.session.commit()
-        add_log(f"Admin stopped task: {task_id}")
-    return redirect(url_for('admin_panel'))
+        add_log(f"User {session['username']} stopped task: {task_id}")
+    return redirect(url_for('user_panel'))
 
 @app.route('/pause_task/<task_id>', methods=['POST'])
 @login_required
 def pause_task(task_id):
     task = Task.query.get(task_id)
-    # Check if the task exists and belongs to the current user
     if task and task.user_id == session.get('user_id'):
         task.status = 'Paused'
         db.session.commit()
-        add_log(f"Task {task_id} has been paused.")
-    return redirect(url_for('admin_panel'))
+        add_log(f"User {session['username']} paused task: {task_id}")
+    return redirect(url_for('user_panel'))
 
 @app.route('/resume_task/<task_id>', methods=['POST'])
 @login_required
 def resume_task(task_id):
     task = Task.query.get(task_id)
-    # Check if the task exists and belongs to the current user
     if task and task.status == 'Paused' and task.user_id == session.get('user_id'):
         task.status = 'Running'
         db.session.commit()
@@ -277,8 +263,8 @@ def resume_task(task_id):
         thread.daemon = True
         thread.start()
         active_threads[task.id] = thread
-        add_log(f"Task {task_id} has been resumed.")
-    return redirect(url_for('admin_panel'))
+        add_log(f"User {session['username']} resumed task: {task_id}")
+    return redirect(url_for('user_panel'))
 
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
@@ -290,7 +276,11 @@ def admin_login():
             session['logged_in'] = True
             session['user_id'] = user.id
             session['username'] = user.username
-            return redirect(url_for('admin_panel'))
+            
+            if user.username == 'admin':
+                return redirect(url_for('admin_panel'))
+            else:
+                return redirect(url_for('user_panel'))
         else:
             return render_template('admin_login.html', error="Invalid credentials")
     return render_template('admin_login.html')
@@ -305,10 +295,21 @@ def admin_logout():
 @app.route('/admin')
 @login_required
 def admin_panel():
-    tasks_from_db = Task.query.all() # Admin can see all tasks
+    if session.get('username') != 'admin':
+        return redirect(url_for('user_panel'))
+        
+    tasks_from_db = Task.query.all()
     total_messages_sent = sum(task.messages_sent for task in tasks_from_db)
     active_threads_count = sum(1 for task in tasks_from_db if task.status == 'Running' or task.status == 'Paused')
     return render_template('admin.html', tasks=tasks_from_db, total_messages_sent=total_messages_sent, active_threads=active_threads_count)
+
+@app.route('/user_panel')
+@login_required
+def user_panel():
+    tasks_from_db = Task.query.filter_by(user_id=session.get('user_id')).all()
+    total_messages_sent = sum(task.messages_sent for task in tasks_from_db)
+    active_threads_count = sum(1 for task in tasks_from_db if task.status == 'Running' or task.status == 'Paused')
+    return render_template('user_panel.html', tasks=tasks_from_db, total_messages_sent=total_messages_sent, active_threads=active_threads_count)
 
 @app.route('/admin/logs')
 @login_required
