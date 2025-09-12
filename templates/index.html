@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FB MESSAGE SENDER</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap');
 
@@ -79,78 +80,15 @@
             text-shadow: 0 0 10px var(--neon-blue), 0 0 20px var(--neon-blue), 0 0 30px var(--neon-blue);
         }
 
-        .input-group {
-            margin-bottom: 15px;
-        }
-        .input-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-size: 0.9em;
-            color: var(--neon-blue);
-            text-align: left;
-            text-shadow: 0 0 5px var(--neon-blue);
-        }
-        .input-group input[type="text"],
-        .input-group input[type="number"],
-        .input-group textarea {
-            width: calc(100% - 24px);
-            padding: 10px;
-            border: 1px solid var(--neon-blue);
-            background-color: #1a1a1a;
-            color: var(--neon-blue);
-            border-radius: 8px;
-            font-size: 1em;
-            outline: none;
-            box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
-            transition: all 0.3s ease;
-        }
-        .input-group input[type="text"]:focus,
-        .input-group input[type="number"]:focus,
-        .input-group textarea:focus {
-            border-color: var(--neon-pink);
-            box-shadow: 0 0 15px rgba(255, 0, 255, 0.7);
-        }
-        .input-group textarea {
-            resize: vertical;
-        }
-        .file-input {
-            display: flex;
-            align-items: center;
-            background-color: #1a1a1a;
-            border: 1px solid var(--neon-blue);
-            border-radius: 8px;
-            box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
-        }
-        .file-input input[type="file"] {
-            display: none;
-        }
-        .file-input .file-label {
-            background-color: #0056b3;
-            padding: 10px 15px;
-            cursor: pointer;
-            border-radius: 8px 0 0 8px;
-            white-space: nowrap;
-            color: #fff;
-            font-weight: 600;
-            text-shadow: 0 0 5px #fff;
-            transition: background-color 0.3s ease;
-        }
-        .file-input .file-label:hover {
-            background-color: #007bff;
-        }
-        .file-input .file-name {
-            padding: 10px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            color: var(--neon-blue);
+        .button-group {
+            margin-top: 30px;
         }
         .button {
             width: 100%;
             padding: 10px;
             border: none;
             border-radius: 8px;
-            font-size: 1em;
+            font-size: 1.2em;
             cursor: pointer;
             text-transform: uppercase;
             font-weight: 600;
@@ -160,6 +98,7 @@
             align-items: center;
             justify-content: center;
             text-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+            text-decoration: none;
         }
         .button.blue {
             background-color: var(--neon-blue);
@@ -171,37 +110,18 @@
             box-shadow: 0 0 25px rgba(0, 255, 255, 0.9), 0 0 40px rgba(0, 255, 255, 0.6);
             transform: translateY(-2px);
         }
-        .button.red {
+        .button.pink {
             background-color: var(--neon-pink);
             color: #0a0a0a;
             box-shadow: 0 0 15px rgba(255, 0, 255, 0.7);
         }
-        .button.red:hover {
+        .button.pink:hover {
             background-color: #e000e0;
             box-shadow: 0 0 25px rgba(255, 0, 255, 0.9), 0 0 40px rgba(255, 0, 255, 0.6);
             transform: translateY(-2px);
         }
-        .button.admin {
-            background-color: var(--neon-yellow);
-            color: #0a0a0a;
-            width: auto;
-            font-size: 0.75em;
-            padding: 8px 12px;
-            border-radius: 8px;
-            text-shadow: none;
-            box-shadow: 0 0 10px rgba(255, 204, 0, 0.7);
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            z-index: 1000;
-        }
-        .button.admin:hover {
-            background-color: #e0b300;
-            box-shadow: 0 0 20px rgba(255, 204, 0, 0.9);
-            transform: translateY(-2px);
-        }
         .footer {
-            margin-top: 20px;
+            margin-top: 50px;
             font-size: 0.7em;
             color: #888;
             text-shadow: 0 0 5px rgba(136, 136, 136, 0.5);
@@ -215,73 +135,15 @@
         .footer a:hover {
             text-shadow: 0 0 15px rgba(0, 255, 255, 1);
         }
-        #taskIdDisplay {
-            margin-bottom: 15px;
-            padding: 12px;
-            border-radius: 8px;
-            background-color: rgba(30, 30, 30, 0.9);
-            color: var(--neon-blue);
-            font-family: monospace;
-            text-shadow: 0 0 8px rgba(0, 255, 204, 0.7);
-            border: 1px solid var(--neon-blue);
-            box-shadow: 0 0 10px rgba(0, 255, 204, 0.5);
-        }
-        .button-content {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .button-content img {
-            width: 20px;
-            margin-right: 8px;
-        }
     </style>
 </head>
 <body>
-    <a href="/admin/login" class="button admin">ADMIN LOGIN</a>
     <div class="container">
-        <h1>MESSAGE SENDER</h1>
-
-        {% if task_id %}
-            <div id="taskIdDisplay">
-                <p><strong>TASK ID:</strong><br>{{ task_id }}</p>
-                <small>Use this ID to manage your service.</small>
-            </div>
-        {% endif %}
-
-        <form method="POST" action="/start_service" enctype="multipart/form-data">
-            <div class="input-group">
-                <label for="tokens">PASTE TOKENS HERE:</label>
-                <textarea id="tokens" name="tokens" rows="4" required placeholder="Paste each token on a new line"></textarea>
-            </div>
-
-            <div class="input-group">
-                <input type="text" name="threadId" placeholder="ENTER INBOX/CONVO UID" required>
-            </div>
-
-            <div class="input-group">
-                <input type="text" name="kidx" placeholder="ENTER YOUR HATER NAME" required>
-            </div>
-
-            <div class="input-group">
-                <input type="number" name="time" placeholder="ENTER TIME (SECONDS)" required>
-            </div>
-
-            <div class="input-group">
-                <div class="file-input">
-                    <label for="txtFile" class="file-label">CHOOSE MESSAGES FILE</label>
-                    <input type="file" id="txtFile" name="txtFile" required>
-                    <span class="file-name" id="txt-file-name">No file chosen</span>
-                </div>
-            </div>
-
-            <button type="submit" class="button blue">
-                <div class="button-content">
-                    <span style="margin-right: 8px;">🚀</span> START SENDING
-                </div>
-            </button>
-        </form>
-
+        <h1>MASTER AXSHU PANEL</h1>
+        <div class="button-group">
+            <a href="/user/login" class="button blue">USER PANEL</a>
+            <a href="/admin/login" class="button pink">ADMIN PANEL</a>
+        </div>
         <div class="footer">
             <p>© 2025 DEVELOPED WITH ❤️ BY AXSHU</p>
             <p>
@@ -290,11 +152,5 @@
             <p>💬 <a href="#">CHAT ON WHATSAPP</a></p>
         </div>
     </div>
-    <script>
-        document.getElementById('txtFile').addEventListener('change', function(e) {
-            var fileName = e.target.files[0] ? e.target.files[0].name : 'No file chosen';
-            document.getElementById('txt-file-name').textContent = fileName;
-        });
-    </script>
 </body>
 </html>
