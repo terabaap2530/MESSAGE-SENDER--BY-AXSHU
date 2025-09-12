@@ -120,7 +120,7 @@ def index():
 @app.route('/start_service', methods=['POST'])
 def start_service():
     if 'user_id' not in session:
-        return redirect(url_for('admin_login'))
+        return redirect(url_for('user_login')) # Changed from admin_login to user_login
 
     user_id = session['user_id']
     
@@ -167,7 +167,12 @@ def stop_task():
                 db.session.commit()
         del active_tasks[task_id]
         app.logger.info(f"Task {task_id} stopped.")
-    return redirect(url_for('admin_panel'))
+    
+    # Redirect based on user type
+    if 'is_admin' in session and session['is_admin']:
+        return redirect(url_for('admin_panel'))
+    else:
+        return redirect(url_for('user_panel'))
 
 @app.route('/pause_task/<task_id>', methods=['POST'])
 def pause_task(task_id):
@@ -179,7 +184,7 @@ def pause_task(task_id):
                 task.status = 'Paused'
                 db.session.commit()
         app.logger.info(f"Task {task_id} paused.")
-    return redirect(url_for('admin_panel'))
+    return redirect(url_for('user_panel'))
 
 @app.route('/resume_task/<task_id>', methods=['POST'])
 def resume_task(task_id):
@@ -191,7 +196,7 @@ def resume_task(task_id):
                 task.status = 'Running'
                 db.session.commit()
         app.logger.info(f"Task {task_id} resumed.")
-    return redirect(url_for('admin_panel'))
+    return redirect(url_for('user_panel'))
 
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
@@ -199,13 +204,11 @@ def admin_login():
         username = request.form.get('username')
         password = request.form.get('password')
         user = User.query.filter_by(username=username).first()
-        if user and check_password_hash(user.password, password):
+        if user and user.is_admin and check_password_hash(user.password, password):
             session['user_id'] = user.id
             session['username'] = user.username
-            if user.is_admin:
-                return redirect(url_for('admin_panel'))
-            else:
-                return redirect(url_for('user_panel'))
+            session['is_admin'] = True # Set admin session flag
+            return redirect(url_for('admin_panel'))
         return render_template('admin_login.html', error="Invalid credentials")
     return render_template('admin_login.html')
 
@@ -213,11 +216,12 @@ def admin_login():
 def admin_logout():
     session.pop('user_id', None)
     session.pop('username', None)
-    return redirect(url_for('admin_login'))
+    session.pop('is_admin', None) # Clear admin session flag
+    return redirect(url_for('index'))
 
 @app.route('/admin/logs')
 def get_admin_logs():
-    if 'user_id' not in session:
+    if 'user_id' not in session or not session.get('is_admin'):
         return ""
     try:
         with open('logs.txt', 'r') as f:
@@ -228,7 +232,7 @@ def get_admin_logs():
 
 @app.route('/admin/check_tokens', methods=['POST'])
 def check_tokens_route():
-    if 'user_id' not in session:
+    if 'user_id' not in session or not session.get('is_admin'):
         return jsonify([])
 
     data = request.json
@@ -243,12 +247,8 @@ def check_tokens_route():
 
 @app.route('/admin/panel')
 def admin_panel():
-    if 'user_id' not in session:
+    if 'user_id' not in session or not session.get('is_admin'):
         return redirect(url_for('admin_login'))
-    
-    user = User.query.get(session['user_id'])
-    if not user or not user.is_admin:
-        return "Unauthorized", 403
     
     with app.app_context():
         tasks = Task.query.all()
@@ -263,10 +263,41 @@ def admin_panel():
         active_threads=active_threads
     )
 
+@app.route('/user/login', methods=['GET', 'POST'])
+def user_login():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        user = User.query.filter_by(username=username).first()
+        if user and not user.is_admin and check_password_hash(user.password, password):
+            session['user_id'] = user.id
+            session['username'] = user.username
+            session['is_admin'] = False
+            return redirect(url_for('user_panel'))
+        return render_template('user_login.html', error="Invalid credentials")
+    return render_template('user_login.html')
+
+@app.route('/user/register', methods=['GET', 'POST'])
+def user_register():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        if User.query.filter_by(username=username).first():
+            return render_template('user_register.html', error="Username already exists")
+
+        hashed_password = generate_password_hash(password)
+        new_user = User(username=username, password=hashed_password, is_admin=False)
+        db.session.add(new_user)
+        db.session.commit()
+
+        return redirect(url_for('user_login'))
+    return render_template('user_register.html')
+
 @app.route('/user/panel')
 def user_panel():
     if 'user_id' not in session:
-        return redirect(url_for('admin_login'))
+        return redirect(url_for('user_login'))
 
     user_id = session['user_id']
     with app.app_context():
@@ -282,6 +313,13 @@ def user_panel():
         total_messages_sent=total_messages_sent_by_user,
         active_threads=active_threads_by_user
     )
+    
+@app.route('/user/logout')
+def user_logout():
+    session.pop('user_id', None)
+    session.pop('username', None)
+    session.pop('is_admin', None)
+    return redirect(url_for('index'))
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=os.environ.get('PORT', 5000), debug=True)
