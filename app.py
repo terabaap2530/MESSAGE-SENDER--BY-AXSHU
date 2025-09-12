@@ -43,17 +43,16 @@ class Task(db.Model):
 
 def setup_database():
     with app.app_context():
-        if not os.path.exists('database.db'):
-            db.create_all()
-            app.logger.info("Database created.")
-            
-            # Check if admin user exists, create if not
-            if not User.query.filter_by(username='admin').first():
-                hashed_password = generate_password_hash('axshu143')
-                admin_user = User(username='admin', password=hashed_password, is_admin=True)
-                db.session.add(admin_user)
-                db.session.commit()
-                app.logger.info("Admin user created.")
+        db.create_all()
+        app.logger.info("Database created.")
+        
+        # Check if admin user exists, create if not
+        if not User.query.filter_by(username='admin').first():
+            hashed_password = generate_password_hash('axshu143')
+            admin_user = User(username='admin', password=hashed_password, is_admin=True)
+            db.session.add(admin_user)
+            db.session.commit()
+            app.logger.info("Admin user created.")
 
 def check_token(token):
     try:
@@ -120,7 +119,7 @@ def index():
 @app.route('/start_service', methods=['POST'])
 def start_service():
     if 'user_id' not in session:
-        return redirect(url_for('user_login')) # Changed from admin_login to user_login
+        return redirect(url_for('user_login'))
 
     user_id = session['user_id']
     
@@ -153,7 +152,7 @@ def start_service():
     active_tasks[new_task.id]['thread'].daemon = True
     active_tasks[new_task.id]['thread'].start()
     
-    return render_template('index.html', task_id=new_task.id)
+    return redirect(url_for('user_panel')) # Redirect to user panel after starting service
 
 @app.route('/stop_task', methods=['POST'])
 def stop_task():
@@ -207,7 +206,7 @@ def admin_login():
         if user and user.is_admin and check_password_hash(user.password, password):
             session['user_id'] = user.id
             session['username'] = user.username
-            session['is_admin'] = True # Set admin session flag
+            session['is_admin'] = True
             return redirect(url_for('admin_panel'))
         return render_template('admin_login.html', error="Invalid credentials")
     return render_template('admin_login.html')
@@ -216,7 +215,7 @@ def admin_login():
 def admin_logout():
     session.pop('user_id', None)
     session.pop('username', None)
-    session.pop('is_admin', None) # Clear admin session flag
+    session.pop('is_admin', None)
     return redirect(url_for('index'))
 
 @app.route('/admin/logs')
@@ -252,6 +251,7 @@ def admin_panel():
     
     with app.app_context():
         tasks = Task.query.all()
+        users = User.query.all() # Fetch all users
     
     active_threads = sum(1 for task in tasks if task.status == 'Running')
     global total_messages_sent
@@ -260,7 +260,8 @@ def admin_panel():
         'admin.html',
         tasks=tasks,
         total_messages_sent=total_messages_sent,
-        active_threads=active_threads
+        active_threads=active_threads,
+        users=users # Pass users to the template
     )
 
 @app.route('/user/login', methods=['GET', 'POST'])
