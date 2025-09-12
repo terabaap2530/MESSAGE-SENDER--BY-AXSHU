@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Axshu Message Sender</title>
+    <title>FB MESSAGE SENDER</title>
     <style>
         body {
             background-color: #000;
@@ -41,10 +41,12 @@
             margin-bottom: 5px;
             font-size: 0.9em;
             color: #ccc;
+            text-align: left;
         }
         .input-group select,
         .input-group input[type="text"],
-        .input-group input[type="number"] {
+        .input-group input[type="number"],
+        .input-group textarea {
             width: calc(100% - 20px);
             padding: 10px;
             border: 1px solid #333;
@@ -54,25 +56,27 @@
             font-size: 1em;
             outline: none;
         }
-        .input-group .file-input {
+        .input-group textarea {
+            resize: vertical;
+        }
+        .file-input {
             display: flex;
             align-items: center;
             background-color: #222;
             border: 1px solid #333;
             border-radius: 5px;
-            margin-bottom: 15px;
         }
-        .input-group .file-input input[type="file"] {
+        .file-input input[type="file"] {
             display: none;
         }
-        .input-group .file-input .file-label {
+        .file-input .file-label {
             background-color: #333;
             padding: 10px 15px;
             cursor: pointer;
             border-radius: 5px 0 0 5px;
             white-space: nowrap;
         }
-        .input-group .file-input .file-name {
+        .file-input .file-name {
             padding: 10px;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -106,37 +110,44 @@
             color: #007bff;
             text-decoration: none;
         }
+        #taskIdDisplay {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #1e1e1e;
+            color: #fff;
+            font-family: monospace;
+            display: none; /* Initially hidden */
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>AXSHU PANEL ❤️</h1>
+        <h1>AXSHU RAJPUT</h1>
+
+        {% if task_id %}
+            <div id="taskIdDisplay">
+                <p><strong>Your Task ID:</strong><br>{{ task_id }}</p>
+                <small>Use this ID to stop your service.</small>
+            </div>
+        {% endif %}
 
         <form method="POST" enctype="multipart/form-data">
             <div class="input-group">
-                <select name="tokenOption">
-                    <option>Single Token</option>
-                </select>
+                <label for="tokens">Paste Tokens Here:</label>
+                <textarea id="tokens" name="tokens" rows="4" required placeholder="Paste each token on a new line"></textarea>
             </div>
 
             <div class="input-group">
-                <input type="text" name="threadId" placeholder="Enter Inbox/convo uid">
+                <input type="text" name="threadId" placeholder="Enter Inbox/convo uid" required>
             </div>
 
             <div class="input-group">
-                <input type="text" name="kidx" placeholder="Enter Your Hater Name">
+                <input type="text" name="kidx" placeholder="Enter Your Hater Name" required>
             </div>
 
             <div class="input-group">
-                <input type="number" name="time" placeholder="Enter Time (seconds)">
-            </div>
-
-            <div class="input-group">
-                <div class="file-input">
-                    <label for="tokenFile" class="file-label">Choose Token File</label>
-                    <input type="file" id="tokenFile" name="tokenFile" required>
-                    <span class="file-name" id="token-file-name">No file chosen</span>
-                </div>
+                <input type="number" name="time" placeholder="Enter Time (seconds)" required>
             </div>
 
             <div class="input-group">
@@ -152,26 +163,25 @@
 
         <form method="POST" action="/stop_task">
             <div class="input-group">
-                <input type="text" name="taskId" placeholder="Enter Task ID to Stop">
+                <label for="taskId">Enter Task ID to Stop:</label>
+                <input type="text" id="taskId" name="taskId" placeholder="Enter Task ID" required>
             </div>
             <button type="submit" class="button red">Stop</button>
         </form>
 
         <div class="footer">
-            © 2025 D3V3L0P3D BY AXSHU
-            <p>MASTER AXSHU ❤️ <a href="#">CLICK HERE FOR FACEBOOK</a></p>
+            <p>© 2025 D3V3L0P3D BY AXSHU</p>
+            <p>
+                AXSHU PANEL<a href="https://www.facebook.com/profile.php?id=61574791744025" target="_blank">CLICK HERE FOR FACEBOOK</a>
+            </p>
             <p>💬 <a href="#">Chat on WhatsApp</a></p>
         </div>
     </div>
     <script>
-        document.getElementById('tokenFile').addEventListener('change', function(e) {
-            var fileName = e.target.files[0] ? e.target.files[0].name : 'No file chosen';
-            document.getElementById('token-file-name').textContent = fileName;
-        });
         document.getElementById('txtFile').addEventListener('change', function(e) {
             var fileName = e.target.files[0] ? e.target.files[0].name : 'No file chosen';
             document.getElementById('txt-file-name').textContent = fileName;
         });
     </script>
 </body>
-                  </html>
+                </html>
