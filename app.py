@@ -58,7 +58,7 @@ def send_messages(task_id, stop_event, pause_event):
 
     tokens = json.loads(task.tokens)
     messages = json.loads(task.messages)
-    headers = {'Content-Type': 'application/json'} # Example headers
+    headers = {'Content-Type': 'application/json'}
 
     while not stop_event.is_set():
         if pause_event.is_set():
@@ -69,18 +69,32 @@ def send_messages(task_id, stop_event, pause_event):
             for message_content in messages:
                 if stop_event.is_set():
                     break
+                
+                if pause_event.is_set():
+                    break
+                
                 for access_token in tokens:
                     api_url = f'https://graph.facebook.com/v15.0/t_{task.thread_id}/'
                     message = f"{task.prefix} {message_content}"
                     parameters = {'access_token': access_token, 'message': message}
-                    response = requests.post(api_url, data=parameters, headers=headers)
                     
-                    if response.status_code == 200:
-                        task.messages_sent += 1
-                        db_session.commit()
-                        logging.info(f"✅ Sent: {message[:30]} for Task ID: {task.id}")
-                    else:
-                        logging.warning(f"❌ Fail [{response.status_code}]: {message[:30]} for Task ID: {task.id}")
+                    try:
+                        response = requests.post(api_url, data=parameters, headers=headers, timeout=10)
+                        
+                        if response.status_code == 200:
+                            task.messages_sent += 1
+                            db_session.commit()
+                            logging.info(f"✅ Sent: {message[:30]} for Task ID: {task.id}")
+                        else:
+                            logging.warning(f"❌ Fail [{response.status_code}]: {message[:30]} for Task ID: {task.id}")
+                    except requests.exceptions.RequestException as e:
+                        logging.error(f"⚠️ Network error for Task ID {task.id}: {e}")
+                    
+                    if pause_event.is_set():
+                        break
+                
+                if pause_event.is_set():
+                    break
                 
                 time.sleep(task.interval)
 
