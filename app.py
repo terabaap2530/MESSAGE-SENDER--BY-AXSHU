@@ -284,5 +284,4 @@ def user_panel():
     )
 
 if __name__ == '__main__':
-    setup_database()
     app.run(host='0.0.0.0', port=os.environ.get('PORT', 5000), debug=True)
