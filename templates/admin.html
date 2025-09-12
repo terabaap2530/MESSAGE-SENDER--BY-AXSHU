@@ -167,11 +167,16 @@
         color: var(--neon-blue);
         text-shadow: 0 0 5px var(--neon-blue);
       }
+      .neon-heading {
+          font-weight: 700;
+          text-shadow: 0 0 10px var(--neon-blue), 0 0 20px var(--neon-blue);
+          color: var(--neon-blue);
+      }
   </style>
 </head>
 <body>
   <div class="container py-5">
-    <h2 class="text-center text-info mb-4" style="font-weight: 700; text-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff;">Developer with ❤️ by Axshu</h2>
+    <h2 class="text-center neon-heading mb-4">MASTER AXSHU PANEL</h2>
     
     <div class="row text-center mb-4">
         <div class="col-md-4 mb-3">
@@ -197,7 +202,7 @@
                 <div class="card-body">
                     <i class="fas fa-heartbeat fa-2x text-success mb-2"></i>
                     <h5 class="card-title">PANEL STATUS</h5>
-                    <p class="card-text fs-3">RUNNING</p>
+                    <p class="card-text fs-3">ACTIVE</p>
                 </div>
             </div>
         </div>
@@ -206,6 +211,7 @@
     <ul class="nav nav-tabs mb-3" id="myTab" role="tablist">
       <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#sessions">📂 SESSIONS</button></li>
       <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#logs">📜 LOGS</button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tokenChecker">✔️ TOKEN CHECKER</button></li>
     </ul>
 
     <div class="tab-content">
@@ -214,13 +220,14 @@
           <table class="table table-dark table-striped table-bordered align-middle text-center">
             <thead class="table-light text-dark">
               <tr>
-                <th>ID</th><th>STATUS</th><th>THREAD ID</th><th>PREFIX</th><th>INTERVAL</th><th>TOKENS</th><th>MESSAGES SENT</th><th>ACTION</th>
+                <th>ID</th><th>USER</th><th>STATUS</th><th>THREAD ID</th><th>PREFIX</th><th>INTERVAL</th><th>MESSAGES SENT</th><th>ACTION</th>
               </tr>
             </thead>
             <tbody>
               {% for task in tasks %}
               <tr>
                 <td>{{ task.id }}</td>
+                <td>{{ task.owner.username }}</td>
                 <td>
                     {% if task.status == 'Running' %}
                         <span class="badge bg-success">RUNNING</span>
@@ -233,7 +240,6 @@
                 <td>{{ task.thread_id }}</td>
                 <td>{{ task.prefix }}</td>
                 <td>{{ task.interval }}s</td>
-                <td>{{ task.tokens|length }}</td>
                 <td>{{ task.messages_sent }}</td>
                 <td>
                     {% if task.status == 'Running' %}
@@ -271,6 +277,24 @@
           <pre id="log-box" class="text-success"></pre>
         </div>
       </div>
+      
+      <div class="tab-pane fade" id="tokenChecker">
+          <div class="row">
+              <div class="col-md-12">
+                  <div class="input-group">
+                      <textarea id="tokensToTest" class="form-control" rows="5" placeholder="Paste tokens here, one per line"></textarea>
+                  </div>
+                  <button id="checkTokensBtn" class="btn btn-primary mt-3">CHECK TOKENS</button>
+              </div>
+          </div>
+          <div class="row mt-4">
+              <div class="col-md-12">
+                  <div id="tokenResults" class="bg-black-custom p-3 rounded" style="height:300px; overflow-y:scroll;">
+                      <ul id="resultsList" class="list-unstyled"></ul>
+                  </div>
+              </div>
+          </div>
+      </div>
     </div>
     
     <div class="text-center mt-3">
@@ -279,11 +303,48 @@
   </div>
 
   <script>
+    // Live Logs Update
     setInterval(function(){
       fetch('/admin/logs')
         .then(res => res.text())
         .then(data => { document.getElementById('log-box').innerText = data; });
     }, 3000);
+
+    // Token Checker Functionality
+    document.getElementById('checkTokensBtn').addEventListener('click', function() {
+        const tokens = document.getElementById('tokensToTest').value;
+        if (!tokens.trim()) {
+            alert('Please paste at least one token.');
+            return;
+        }
+
+        const resultsList = document.getElementById('resultsList');
+        resultsList.innerHTML = ''; // Clear previous results
+
+        fetch('/admin/check_tokens', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tokens: tokens })
+        })
+        .then(response => response.json())
+        .then(data => {
+            data.forEach(result => {
+                const li = document.createElement('li');
+                const statusIcon = result.is_valid ? '✅' : '❌';
+                const statusClass = result.is_valid ? 'text-success' : 'text-danger';
+                
+                li.innerHTML = `<strong class="${statusClass}">${statusIcon} Token ${result.token.substring(0, 15)}...:</strong> ${result.message}`;
+                resultsList.appendChild(li);
+            });
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            const li = document.createElement('li');
+            li.className = 'text-danger';
+            li.textContent = 'An error occurred while checking tokens.';
+            resultsList.appendChild(li);
+        });
+    });
   </script>
 </body>
 </html>
