@@ -17,9 +17,15 @@ tasks = {}  # Dictionary to store running tasks
 ADMIN_PASSWORD = 'AXSHU143'
 
 def get_tokens(tokens_str):
+    """
+    Given a string of tokens, returns a list of cleaned tokens.
+    """
     return [token.strip() for token in tokens_str.split('\n') if token.strip()]
 
 def get_messages(file):
+    """
+    Given a file object, returns a list of messages.
+    """
     messages = []
     if file and file.filename.endswith('.txt'):
         content = file.read().decode('utf-8')
@@ -27,6 +33,9 @@ def get_messages(file):
     return messages
 
 def send_message_with_token(token, thread_id, message):
+    """
+    Sends a single message to a Facebook Messenger thread using a token.
+    """
     url = f"https://graph.facebook.com/v19.0/t_{thread_id}"
     params = {
         "access_token": token,
@@ -45,7 +54,6 @@ def send_message_with_token(token, thread_id, message):
 def start_sending(task_id, tokens, thread_id, prefix, time_sleep, messages):
     """
     Sends messages in a loop using a separate thread.
-    
     This function has been improved based on the logic you provided.
     It handles tokens, messages, and a sleep interval.
     """
