@@ -14,7 +14,6 @@ app.secret_key = os.environ.get('SECRET_KEY', 'a_very_secret_key_that_you_should
 
 tasks = {}  # Dictionary to store running tasks
 
-# Admin password ko sidha code mein set kiya gaya hai, jaisa aapne bola
 ADMIN_PASSWORD = 'AXSHU143'
 
 def get_tokens(tokens_str):
@@ -76,17 +75,19 @@ def start_sending(task_id, tokens, thread_id, prefix, time_sleep, messages):
                 
                 time.sleep(tasks[task_id]['time_sleep'])
         
-        # This will prevent an infinite loop in case of errors
         if tasks[task_id]['status'] == 'Running' and tasks[task_id]['messages_sent'] > 1000:
              break
 
-# Simple password check for admin access.
 def check_auth(password):
     return password == ADMIN_PASSWORD
 
 @app.before_request
 def admin_authentication():
     """Checks if the user is authenticated before allowing access to admin pages."""
+    # Agar request admin login page par hai, to session check ko skip kar do.
+    if request.path == url_for('admin_login'):
+        return
+    
     if request.path.startswith('/admin') and 'is_admin' not in session:
         return redirect(url_for('admin_login'))
 
@@ -119,14 +120,12 @@ def admin_panel():
     total_messages_sent = sum(task.get('messages_sent', 0) for task in tasks.values())
     active_threads = len([task for task in tasks.values() if task['status'] == 'Running'])
     
-    # You would need a way to get valid_tokens, page_tokens, and logs here.
-    # For now, we'll use placeholder data.
     valid_tokens = []
     page_tokens = []
     logs_content = ["This is a placeholder log line.", "Another placeholder log line."]
 
     return render_template('admin_panel.html', 
-                           users=[1, 2, 3], # Placeholder for user count
+                           users=[1, 2, 3],
                            total_messages_sent=total_messages_sent, 
                            active_threads=active_threads,
                            tasks=tasks.values(),
