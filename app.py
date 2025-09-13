@@ -4,44 +4,18 @@ import threading
 import uuid
 import time
 import requests
-from flask import Flask, render_template, request, jsonify, redirect, url_for, session, abort
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session, abort, g
 from dotenv import load_dotenv
 
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'a_very_secret_key_that_you_should_change')
+app.secret_key = os.environ.get('SECRET_KEY')
 
-# Simple placeholder for a dictionary to store tasks, since we're not using Celery
-tasks = {}
+tasks = {}  # Dictionary to store running tasks
 
-# Admin password is now from .env or a default placeholder
-ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123')
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD')
 
-# --- Admin Authentication ---
-def check_auth(password):
-    """Simple password check for admin access."""
-    return password == ADMIN_PASSWORD
-
-@app.route('/admin_login', methods=['GET', 'POST'])
-def admin_login():
-    """Renders a simple login form for the admin panel."""
-    if request.method == 'POST':
-        password = request.form.get('password')
-        if check_auth(password):
-            session['is_admin'] = True
-            return redirect(url_for('admin_panel'))
-        else:
-            return render_template('admin_login.html', error="Invalid password.")
-    return render_template('admin_login.html')
-
-@app.before_request
-def admin_authentication():
-    """Checks if the user is authenticated before allowing access to admin pages."""
-    if request.path.startswith('/admin') and 'is_admin' not in session:
-        return redirect(url_for('admin_login'))
-
-# --- Helper Functions (Your Original Logic) ---
 def get_tokens(tokens_str):
     return [token.strip() for token in tokens_str.split('\n') if token.strip()]
 
@@ -105,28 +79,16 @@ def start_sending(task_id, tokens, thread_id, prefix, time_sleep, messages):
         if tasks[task_id]['status'] == 'Running' and tasks[task_id]['messages_sent'] > 1000:
              break
 
-# --- Admin Panel Route ---
-@app.route('/admin_panel')
-def admin_panel():
-    total_messages_sent = sum(task.get('messages_sent', 0) for task in tasks.values())
-    active_threads = len([task for task in tasks.values() if task['status'] == 'Running'])
-    
-    # Placeholder data for the template
-    users = [1, 2, 3] 
-    valid_tokens = [] 
-    page_tokens = []
-    logs_content = ["Placeholder log line 1", "Placeholder log line 2"]
+def check_auth(username, password):
+    return username == 'admin' and password == ADMIN_PASSWORD
 
-    return render_template('admin_panel.html', 
-                           users=users,
-                           total_messages_sent=total_messages_sent,
-                           active_threads=active_threads,
-                           tasks=tasks.values(),
-                           valid_tokens=valid_tokens,
-                           page_tokens=page_tokens,
-                           logs_content=logs_content)
+@app.before_request
+def before_request():
+    if request.path.startswith('/admin'):
+        auth_header = request.authorization
+        if not auth_header or not check_auth(auth_header.username, auth_header.password):
+            return abort(401, 'Please provide the admin username and password.')
 
-# --- User Panel Routes ---
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -134,6 +96,30 @@ def index():
 @app.route('/user_panel')
 def user_panel():
     return render_template('user_panel.html')
+
+@app.route('/user_service')
+def user_service():
+    return render_template('user_service.html')
+
+@app.route('/admin_panel')
+def admin_panel():
+    total_messages_sent = sum(task.get('messages_sent', 0) for task in tasks.values())
+    active_threads = len([task for task in tasks.values() if task['status'] == 'Running'])
+    
+    # You would need a way to get valid_tokens, page_tokens, and logs here.
+    # For now, we'll use placeholder data.
+    valid_tokens = []
+    page_tokens = []
+    logs_content = ["This is a placeholder log line.", "Another placeholder log line."]
+
+    return render_template('admin_panel.html', 
+                           users=[1, 2, 3], # Placeholder for user count
+                           total_messages_sent=total_messages_sent, 
+                           active_threads=active_threads,
+                           tasks=tasks.values(),
+                           valid_tokens=valid_tokens,
+                           page_tokens=page_tokens,
+                           logs_content=logs_content)
 
 @app.route('/get_session_details', methods=['POST'])
 def get_session_details():
@@ -204,7 +190,7 @@ def start_service():
     thread.daemon = True
     thread.start()
     
-    return render_template('token_checker.html', taskId=task.id)
+    return render_template('token_checker.html', taskId=task_id)
 
 @app.route('/token_checker', methods=['POST'])
 def check_tokens():
