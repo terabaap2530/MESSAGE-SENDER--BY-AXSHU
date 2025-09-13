@@ -3,10 +3,9 @@ import re
 import uuid
 import time
 import requests
-from flask import Flask, render_template, request, jsonify, redirect, url_for, session
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session, abort
 from dotenv import load_dotenv
 from celery import Celery
-import asyncio
 
 load_dotenv()
 
@@ -20,9 +19,33 @@ app.config['CELERY_RESULT_BACKEND'] = os.environ.get('REDIS_URL', 'redis://local
 celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
 celery.conf.update(app.config)
 
-# Store tasks and their states
-tasks = {}
+# Get admin password from environment variable for basic authentication
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD')
 
+# --- Admin Authentication ---
+def check_auth(password):
+    """Simple password check for admin access."""
+    return password == ADMIN_PASSWORD
+
+@app.route('/admin_login', methods=['GET', 'POST'])
+def admin_login():
+    """Renders a simple login form for the admin panel."""
+    if request.method == 'POST':
+        password = request.form.get('password')
+        if check_auth(password):
+            session['is_admin'] = True
+            return redirect(url_for('admin_panel'))
+        else:
+            return render_template('admin_login.html', error="Invalid password.")
+    return render_template('admin_login.html')
+
+@app.before_request
+def admin_authentication():
+    """Checks if the user is authenticated before allowing access to admin pages."""
+    if request.path.startswith('/admin') and 'is_admin' not in session:
+        return redirect(url_for('admin_login'))
+
+# --- Celery Task Definition (Your Original Code) ---
 @celery.task(bind=True)
 def start_sending_task(self, tokens_str, thread_id, prefix, time_sleep, messages):
     tokens = [token.strip() for token in tokens_str.split('\n') if token.strip()]
@@ -34,15 +57,9 @@ def start_sending_task(self, tokens_str, thread_id, prefix, time_sleep, messages
     
     current_messages_sent = 0
     
-    while self.request.is_valid(): # check if the task is still valid
+    while True: # Main loop
         for message in messages:
-            if not self.request.is_valid():
-                break
-            
             for token in tokens:
-                if not self.request.is_valid():
-                    break
-                
                 full_message = f"{prefix} {message}"
                 result = send_message_with_token(token, thread_id, full_message)
                 
@@ -72,6 +89,41 @@ def send_message_with_token(token, thread_id, message):
         print(f"Other error occurred: {err}")
     return None
 
+# --- Admin Panel Route ---
+@app.route('/admin_panel')
+def admin_panel():
+    try:
+        i = celery.control.inspect()
+        active_tasks = i.active()
+        # The inspection result can be a dictionary where keys are worker hostnames
+        if active_tasks:
+            all_tasks = [task for worker_tasks in active_tasks.values() for task in worker_tasks]
+        else:
+            all_tasks = []
+
+    except Exception as e:
+        print(f"Celery inspection failed: {e}")
+        all_tasks = []
+    
+    total_messages_sent = sum(task['kwargs'].get('messages_sent', 0) for task in all_tasks)
+    active_threads = len(all_tasks)
+    
+    # Placeholder data for the template
+    users = [1, 2, 3]
+    valid_tokens = [] 
+    page_tokens = []
+    logs_content = ["Placeholder log line 1", "Placeholder log line 2"]
+
+    return render_template('admin_panel.html', 
+                           users=users,
+                           total_messages_sent=total_messages_sent,
+                           active_threads=active_threads,
+                           tasks=all_tasks,
+                           valid_tokens=valid_tokens,
+                           page_tokens=page_tokens,
+                           logs_content=logs_content)
+
+# --- User Panel Routes ---
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -219,3 +271,4 @@ def render_session_manager():
 
 if __name__ == '__main__':
     app.run(debug=True)
+    
