@@ -4,17 +4,18 @@ import threading
 import uuid
 import time
 import requests
-from flask import Flask, render_template, request, jsonify, redirect, url_for, session, abort, g
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session, abort
 from dotenv import load_dotenv
 
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY')
+app.secret_key = os.environ.get('SECRET_KEY', 'a_very_secret_key_that_you_should_change')
 
 tasks = {}  # Dictionary to store running tasks
 
-ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD')
+# Admin password ko sidha code mein set kiya gaya hai, jaisa aapne bola
+ADMIN_PASSWORD = 'AXSHU143'
 
 def get_tokens(tokens_str):
     return [token.strip() for token in tokens_str.split('\n') if token.strip()]
@@ -79,15 +80,27 @@ def start_sending(task_id, tokens, thread_id, prefix, time_sleep, messages):
         if tasks[task_id]['status'] == 'Running' and tasks[task_id]['messages_sent'] > 1000:
              break
 
-def check_auth(username, password):
-    return username == 'admin' and password == ADMIN_PASSWORD
+# Simple password check for admin access.
+def check_auth(password):
+    return password == ADMIN_PASSWORD
 
 @app.before_request
-def before_request():
-    if request.path.startswith('/admin'):
-        auth_header = request.authorization
-        if not auth_header or not check_auth(auth_header.username, auth_header.password):
-            return abort(401, 'Please provide the admin username and password.')
+def admin_authentication():
+    """Checks if the user is authenticated before allowing access to admin pages."""
+    if request.path.startswith('/admin') and 'is_admin' not in session:
+        return redirect(url_for('admin_login'))
+
+@app.route('/admin_login', methods=['GET', 'POST'])
+def admin_login():
+    """Renders a simple login form for the admin panel and handles login."""
+    if request.method == 'POST':
+        password = request.form.get('password')
+        if check_auth(password):
+            session['is_admin'] = True
+            return redirect(url_for('admin_panel'))
+        else:
+            return render_template('admin_login.html', error="Invalid password.")
+    return render_template('admin_login.html')
 
 @app.route('/')
 def index():
@@ -268,3 +281,4 @@ def render_session_manager():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
