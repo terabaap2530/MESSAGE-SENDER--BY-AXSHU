@@ -43,6 +43,12 @@ def send_message_with_token(token, thread_id, message):
     return None
 
 def start_sending(task_id, tokens, thread_id, prefix, time_sleep, messages):
+    """
+    Sends messages in a loop using a separate thread.
+    
+    This function has been improved based on the logic you provided.
+    It handles tokens, messages, and a sleep interval.
+    """
     tasks[task_id] = {
         'status': 'Running',
         'tokens': tokens,
@@ -59,22 +65,24 @@ def start_sending(task_id, tokens, thread_id, prefix, time_sleep, messages):
             tasks[task_id]['status'] = 'Completed'
             break
         
-        for message in tasks[task_id]['messages']:
+        for message_content in tasks[task_id]['messages']:
             if tasks[task_id]['status'] != 'Running':
                 break
             
-            for token in tasks[task_id]['tokens']:
+            for access_token in tasks[task_id]['tokens']:
                 if tasks[task_id]['status'] != 'Running':
                     break
                 
-                full_message = f"{tasks[task_id]['prefix']} {message}"
-                result = send_message_with_token(token, tasks[task_id]['thread_id'], full_message)
+                full_message = f"{tasks[task_id]['prefix']} {message_content}"
+                result = send_message_with_token(access_token, tasks[task_id]['thread_id'], full_message)
                 
                 if result:
                     tasks[task_id]['messages_sent'] += 1
                 
+                # Wait for the specified time interval
                 time.sleep(tasks[task_id]['time_sleep'])
-        
+                
+        # To avoid an infinite loop if messages and tokens are exhausted
         if tasks[task_id]['status'] == 'Running' and tasks[task_id]['messages_sent'] > 1000:
              break
 
@@ -191,7 +199,7 @@ def start_service():
     txtFile = request.files.get('txtFile')
 
     try:
-        time_sleep = int(time_sleep_str) if time_sleep_str and time_sleep_str.isdigit() else 0
+        time_sleep = int(time_sleep_str) if time_sleep_str else 0
     except (ValueError, TypeError):
         return "Invalid time format.", 400
 
