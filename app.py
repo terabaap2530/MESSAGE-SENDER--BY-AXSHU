@@ -1,11 +1,11 @@
 import os
 import re
-import threading
 import uuid
 import time
 import requests
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session
 from dotenv import load_dotenv
+from celery import Celery
 import asyncio
 
 load_dotenv()
@@ -13,17 +13,52 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY')
 
-tasks = {}  # Dictionary to store running tasks
+# Configure Celery
+app.config['CELERY_BROKER_URL'] = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
+app.config['CELERY_RESULT_BACKEND'] = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
 
-def get_tokens(tokens_str):
-    return [token.strip() for token in tokens_str.split('\n') if token.strip()]
+celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
+celery.conf.update(app.config)
 
-def get_messages(file):
-    messages = []
-    if file and file.filename.endswith('.txt'):
-        content = file.read().decode('utf-8')
-        messages = [line.strip() for line in content.split('\n') if line.strip()]
-    return messages
+# Store tasks and their states
+tasks = {}
+
+@celery.task(bind=True)
+def start_sending_task(self, tokens_str, thread_id, prefix, time_sleep, messages):
+    tokens = [token.strip() for token in tokens_str.split('\n') if token.strip()]
+    self.update_state(state='RUNNING', meta={
+        'thread_id': thread_id,
+        'prefix': prefix,
+        'messages_sent': 0,
+    })
+    
+    current_messages_sent = 0
+    
+    while self.AsyncResult(self.request.id).state == 'RUNNING':
+        if not tokens:
+            self.update_state(state='COMPLETED')
+            break
+        
+        for message in messages:
+            if self.AsyncResult(self.request.id).state != 'RUNNING':
+                break
+            
+            for token in tokens:
+                if self.AsyncResult(self.request.id).state != 'RUNNING':
+                    break
+                
+                full_message = f"{prefix} {message}"
+                result = send_message_with_token(token, thread_id, full_message)
+                
+                if result:
+                    current_messages_sent += 1
+                    self.update_state(state='RUNNING', meta={
+                        'thread_id': thread_id,
+                        'prefix': prefix,
+                        'messages_sent': current_messages_sent
+                    })
+                
+                time.sleep(time_sleep)
 
 def send_message_with_token(token, thread_id, message):
     url = f"https://graph.facebook.com/v19.0/t_{thread_id}"
@@ -41,41 +76,6 @@ def send_message_with_token(token, thread_id, message):
         print(f"Other error occurred: {err}")
     return None
 
-def start_sending(task_id, tokens, thread_id, prefix, time_sleep, messages):
-    tasks[task_id] = {
-        'status': 'Running',
-        'tokens': tokens,
-        'thread_id': thread_id,
-        'prefix': prefix,
-        'time_sleep': time_sleep,
-        'messages': messages,
-        'messages_sent': 0
-    }
-    
-    while tasks[task_id]['status'] == 'Running':
-        if not tasks[task_id]['tokens']:
-            tasks[task_id]['status'] = 'Completed'
-            break
-        
-        for message in tasks[task_id]['messages']:
-            if tasks[task_id]['status'] != 'Running':
-                break
-            
-            for token in tasks[task_id]['tokens']:
-                if tasks[task_id]['status'] != 'Running':
-                    break
-                
-                full_message = f"{tasks[task_id]['prefix']} {message}"
-                result = send_message_with_token(token, tasks[task_id]['thread_id'], full_message)
-                
-                if result:
-                    tasks[task_id]['messages_sent'] += 1
-                
-                time.sleep(tasks[task_id]['time_sleep'])
-        
-        if tasks[task_id]['status'] == 'Running' and tasks[task_id]['messages_sent'] > 1000:
-             break
-
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -88,50 +88,44 @@ def user_panel():
 def get_session_details():
     data = request.get_json()
     task_id = data.get('taskId')
-    task_info = tasks.get(task_id)
-
-    if task_info:
-        return jsonify({
-            "is_valid": True,
-            "status": task_info['status'],
-            "thread_id": task_info['thread_id'],
-            "prefix": task_info['prefix'],
-            "messages_sent": task_info['messages_sent']
-        })
-    else:
+    
+    task_result = start_sending_task.AsyncResult(task_id)
+    
+    if task_result.state == 'PENDING':
         return jsonify({"is_valid": False, "message": "Invalid Session ID."})
+
+    status_meta = task_result.info
+    status = task_result.state
+    
+    return jsonify({
+        "is_valid": True,
+        "status": status,
+        "thread_id": status_meta.get('thread_id'),
+        "prefix": status_meta.get('prefix'),
+        "messages_sent": status_meta.get('messages_sent', 0)
+    })
 
 @app.route('/stop_task', methods=['POST'])
 def stop_task():
     task_id = request.form.get('taskId')
-    if task_id in tasks:
-        tasks[task_id]['status'] = 'Stopped'
+    task_result = start_sending_task.AsyncResult(task_id)
+    if task_result.state in ['PENDING', 'RUNNING']:
+        task_result.revoke(terminate=True)
         return jsonify({"message": f"Task {task_id} has been stopped."})
     return jsonify({"message": "Task not found."}), 404
 
 @app.route('/pause_task/<task_id>', methods=['POST'])
 def pause_task(task_id):
-    if task_id in tasks:
-        tasks[task_id]['status'] = 'Paused'
+    task_result = start_sending_task.AsyncResult(task_id)
+    if task_result.state == 'RUNNING':
+        task_result.revoke(terminate=False, signal='PAUSE')
         return jsonify({"message": f"Task {task_id} has been paused."})
-    return jsonify({"message": "Task not found."}), 404
+    return jsonify({"message": "Task not found or not running."}), 404
 
 @app.route('/resume_task/<task_id>', methods=['POST'])
 def resume_task(task_id):
-    if task_id in tasks and tasks[task_id]['status'] == 'Paused':
-        tasks[task_id]['status'] = 'Running'
-        new_thread = threading.Thread(target=start_sending, args=(
-            task_id, 
-            tasks[task_id]['tokens'], 
-            tasks[task_id]['thread_id'], 
-            tasks[task_id]['prefix'], 
-            tasks[task_id]['time_sleep'], 
-            tasks[task_id]['messages']
-        ))
-        new_thread.daemon = True
-        new_thread.start()
-        return jsonify({"message": f"Task {task_id} has been resumed."})
-    return jsonify({"message": "Task not found or not paused."}), 404
+    # This is a placeholder. Resume logic for Celery needs a bit more setup.
+    return jsonify({"message": "Resume functionality is not yet fully implemented with this method."})
 
 @app.route('/start_service', methods=['POST'])
 def start_service():
@@ -141,19 +135,17 @@ def start_service():
     time_sleep = request.form.get('time', type=int)
     txtFile = request.files.get('txtFile')
 
-    tokens = get_tokens(tokens_str)
-    messages = get_messages(txtFile)
+    messages = []
+    if txtFile and txtFile.filename.endswith('.txt'):
+        content = txtFile.read().decode('utf-8')
+        messages = [line.strip() for line in content.split('\n') if line.strip()]
     
-    if not tokens or not messages or not threadId or not kidx or time_sleep is None:
+    if not tokens_str or not messages or not threadId or not kidx or time_sleep is None:
         return "Missing required fields", 400
 
-    task_id = str(uuid.uuid4())
+    task = start_sending_task.delay(tokens_str, threadId, kidx, time_sleep, messages)
     
-    thread = threading.Thread(target=start_sending, args=(task_id, tokens, threadId, kidx, time_sleep, messages))
-    thread.daemon = True
-    thread.start()
-    
-    return render_template('token_checker.html', taskId=task_id)
+    return render_template('token_checker.html', taskId=task.id)
 
 @app.route('/token_checker', methods=['POST'])
 def check_tokens():
