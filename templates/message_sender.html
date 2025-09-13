@@ -27,7 +27,7 @@
             min-height: 100vh;
             margin: 0;
             padding: 20px;
-            overflow-y: auto;
+            overflow-y: auto; /* Enable scrolling for the whole page if content is too long */
             position: relative;
             animation: background-glow 15s infinite alternate ease-in-out;
         }
@@ -48,7 +48,7 @@
             box-shadow: 0 0 30px rgba(0, 255, 255, 0.6), 0 0 60px rgba(0, 255, 255, 0.3);
             position: relative;
             z-index: 1;
-            overflow: hidden;
+            overflow: hidden; /* Ensure inner elements don't overflow the rounded corners */
         }
 
         .container::before {
@@ -66,7 +66,7 @@
                 rgba(255, 0, 255, 0.2)
             );
             animation: running-lights 4s infinite linear;
-            z-index: -1;
+            z-index: -1; /* Behind the content */
         }
 
         @keyframes running-lights {
@@ -78,6 +78,14 @@
             font-weight: 700;
             color: var(--neon-blue);
             text-shadow: 0 0 10px var(--neon-blue), 0 0 20px var(--neon-blue);
+            margin-bottom: 25px; /* Added spacing */
+        }
+
+        .form-label {
+            color: var(--neon-yellow); /* Label color */
+            font-weight: 600;
+            text-shadow: 0 0 5px var(--neon-yellow);
+            margin-bottom: 8px; /* Added spacing */
         }
 
         .form-control, .form-control:focus {
@@ -86,25 +94,36 @@
             border: 1px solid var(--neon-blue);
             box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
             transition: all 0.3s ease;
+            padding: 10px 15px; /* Adjusted padding */
+            border-radius: 8px; /* Slightly rounded corners */
         }
         .form-control:focus {
             border-color: var(--neon-pink);
             box-shadow: 0 0 15px rgba(255, 0, 255, 0.7);
         }
+        .form-control::placeholder {
+            color: rgba(0, 255, 255, 0.6); /* Placeholder color */
+        }
 
         .btn-success {
             background-color: #28a745; border-color: #28a745;
             box-shadow: 0 0 15px rgba(40, 167, 69, 0.7);
+            padding: 12px 25px; /* Larger button */
+            font-weight: 600;
+            border-radius: 8px;
+            transition: all 0.3s ease;
         }
         .btn-success:hover {
             box-shadow: 0 0 25px rgba(40, 167, 69, 1);
+            transform: translateY(-2px); /* Slight lift on hover */
         }
         .back-btn {
-            margin-top: 20px;
+            margin-top: 25px; /* Increased spacing */
             color: #fff;
             text-decoration: none;
             text-shadow: 0 0 8px var(--neon-pink);
             transition: text-shadow 0.3s ease;
+            font-weight: 600;
         }
         .back-btn:hover {
             text-shadow: 0 0 15px var(--neon-pink);
@@ -112,9 +131,27 @@
 
         /* Scrolling panel system */
         .scrolling-panel {
-            max-height: 500px; /* Adjust height as needed */
+            max-height: 50vh; /* Adjust height as needed, using viewport height for responsiveness */
             overflow-y: auto;
-            padding-right: 15px; /* for scrollbar */
+            padding-right: 15px; /* Space for scrollbar */
+            margin-bottom: 20px; /* Space before the back button */
+        }
+        /* Custom Scrollbar for Webkit browsers */
+        .scrolling-panel::-webkit-scrollbar {
+            width: 8px;
+        }
+        .scrolling-panel::-webkit-scrollbar-track {
+            background: rgba(20, 20, 20, 0.5); /* Darker track */
+            border-radius: 10px;
+        }
+        .scrolling-panel::-webkit-scrollbar-thumb {
+            background: var(--neon-pink); /* Neon pink thumb */
+            border-radius: 10px;
+            box-shadow: 0 0 5px var(--neon-pink); /* Glow effect */
+        }
+        .scrolling-panel::-webkit-scrollbar-thumb:hover {
+            background: var(--neon-blue); /* Neon blue on hover */
+            box-shadow: 0 0 8px var(--neon-blue);
         }
     </style>
 </head>
@@ -123,20 +160,20 @@
         <h2 class="text-center neon-heading mb-4"><i class="fas fa-paper-plane me-2"></i> MESSAGE SENDER</h2>
         <div class="scrolling-panel">
             <form method="POST" action="/start_service" enctype="multipart/form-data">
-                <div class="mb-3">
+                <div class="mb-3 text-start">
                     <label for="tokens" class="form-label">PASTE TOKENS HERE:</label>
                     <textarea id="tokens" name="tokens" rows="4" class="form-control" required placeholder="Paste each token on a new line"></textarea>
                 </div>
-                <div class="mb-3">
+                <div class="mb-3 text-start">
                     <input type="text" name="threadId" class="form-control" placeholder="ENTER INBOX/CONVO UID" required>
                 </div>
-                <div class="mb-3">
+                <div class="mb-3 text-start">
                     <input type="text" name="kidx" class="form-control" placeholder="ENTER YOUR HATER NAME" required>
                 </div>
-                <div class="mb-3">
+                <div class="mb-3 text-start">
                     <input type="number" name="time" class="form-control" placeholder="ENTER TIME (SECONDS)" required>
                 </div>
-                <div class="mb-3">
+                <div class="mb-3 text-start">
                     <label for="txtFile" class="form-label">CHOOSE MESSAGES FILE:</label>
                     <input type="file" id="txtFile" name="txtFile" class="form-control" required>
                 </div>
