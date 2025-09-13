@@ -90,8 +90,7 @@ def admin_authentication():
     if request.path.startswith('/admin') and 'is_admin' not in session:
         return redirect(url_for('admin_login'))
 
-# `admin_login` route ko `/admin/login` mein badla gaya
-@app.route('/admin/login', methods=['GET', 'POST'])
+@app.route('/admin_login', methods=['GET', 'POST'])
 def admin_login():
     """Renders a simple login form for the admin panel and handles login."""
     if request.method == 'POST':
@@ -188,13 +187,19 @@ def start_service():
     tokens_str = request.form.get('tokens')
     threadId = request.form.get('threadId')
     kidx = request.form.get('kidx')
-    time_sleep = request.form.get('time', type=int)
+    time_sleep = request.form.get('time')
     txtFile = request.files.get('txtFile')
+
+    # Fix: `time_sleep` value ko integer mein badalna aur default value dena
+    try:
+        time_sleep = int(time_sleep) if time_sleep else 0
+    except (ValueError, TypeError):
+        return "Invalid time format.", 400
 
     tokens = get_tokens(tokens_str)
     messages = get_messages(txtFile)
     
-    if not tokens or not messages or not threadId or not kidx or time_sleep is None:
+    if not tokens or not messages or not threadId or not kidx:
         return "Missing required fields", 400
 
     task_id = str(uuid.uuid4())
