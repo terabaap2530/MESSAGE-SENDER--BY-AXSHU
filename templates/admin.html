@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap');
 
@@ -24,8 +24,8 @@
             align-items: center;
             min-height: 100vh;
             margin: 0;
-            padding-top: 50px;
-            padding-bottom: 50px;
+            padding: 20px;
+            overflow-y: auto;
             position: relative;
             animation: background-glow 15s infinite alternate ease-in-out;
         }
@@ -35,14 +35,24 @@
             to { box-shadow: inset 0 0 100px rgba(255, 0, 255, 0.2); }
         }
 
-        .container {
+        .container-wrapper {
             max-width: 95%;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
             padding: 30px;
             background-color: rgba(10, 10, 10, 0.8);
             border-radius: 15px;
-            box-shadow: 0 0 30px rgba(0, 255, 255, 0.6), 0 0 60px rgba(0, 255, 255, 0.3);
+            text-align: center;
             backdrop-filter: blur(8px);
             border: 1px solid var(--neon-blue);
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.6), 0 0 60px rgba(0, 255, 255, 0.3);
             position: relative;
             z-index: 1;
             overflow: hidden;
@@ -71,350 +81,218 @@
             100% { transform: translate(100%, 100%); }
         }
 
-        .card {
-            background-color: rgba(10, 10, 10, 0.6);
-            border: 1px solid var(--neon-blue);
-            box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
-            transition: all 0.3s ease;
-        }
-        .card:hover {
-            box-shadow: 0 0 25px rgba(0, 255, 255, 0.7);
-            transform: translateY(-5px);
-        }
-        .card-title {
-            color: var(--neon-blue);
-            text-shadow: 0 0 8px var(--neon-blue);
-            font-weight: 600;
-        }
-        .card-text {
+        h2 {
+            font-family: 'Montserrat', sans-serif;
             font-weight: 700;
+            color: var(--neon-blue);
+            text-shadow: 0 0 10px var(--neon-blue), 0 0 20px var(--neon-blue);
         }
 
-        .nav-tabs {
-            border: none;
-        }
-        .nav-tabs .nav-link {
+        .stats-box {
             background-color: rgba(20, 20, 20, 0.9);
-            color: var(--neon-blue);
             border: 1px solid var(--neon-blue);
-            border-bottom: none;
-            margin-right: 5px;
-            border-radius: 10px 10px 0 0;
-            text-shadow: 0 0 5px var(--neon-blue);
-            transition: all 0.3s ease;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.7);
         }
-        .nav-tabs .nav-link.active {
-            background-color: rgba(30, 30, 30, 0.9);
-            color: #fff;
-            border-bottom: 1px solid transparent;
-            text-shadow: 0 0 10px #fff;
+
+        .stats-item h4 {
+            color: var(--neon-pink);
+            text-shadow: 0 0 8px var(--neon-pink);
         }
-        .nav-tabs .nav-link:hover {
-            background-color: rgba(30, 30, 30, 0.9);
-            color: #fff;
+
+        .section-box {
+            background-color: rgba(20, 20, 20, 0.9);
+            border: 1px solid var(--neon-blue);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.7);
+        }
+        
+        .logs-container {
+            max-height: 400px;
+            overflow-y: auto;
+            text-align: left;
+            padding: 10px;
+            background-color: rgba(10, 10, 10, 0.5);
+            border: 1px solid var(--neon-yellow);
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(255, 204, 0, 0.5);
+        }
+
+        .logs-container p {
+            margin: 0;
+            font-size: 0.9em;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+        
+        .table-container {
+            max-height: 400px;
+            overflow-y: auto;
         }
 
         .table {
             color: #e0e0e0;
-        }
-        .table thead th {
-            border-bottom: 2px solid var(--neon-pink);
-            color: var(--neon-pink);
-            text-shadow: 0 0 5px var(--neon-pink);
-        }
-        .table-striped > tbody > tr:nth-of-type(odd) { background-color: rgba(30, 30, 30, 0.8); }
-        .table-bordered { border-color: #333; }
-        .bg-black-custom {
-            background-color: #000;
-            border: 1px solid var(--neon-blue);
-            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
-        }
-        .btn {
-            font-weight: 600;
-            padding: 10px 15px;
-            border-radius: 8px;
-            text-transform: uppercase;
-            transition: all 0.3s ease;
-        }
-        .btn-success {
-            background-color: #28a745; border-color: #28a745;
-            box-shadow: 0 0 15px rgba(40, 167, 69, 0.7);
-        }
-        .btn-success:hover {
-            box-shadow: 0 0 25px rgba(40, 167, 69, 1);
-            transform: translateY(-2px);
-        }
-        .btn-warning {
-            background-color: #ffc107; color: #000; border-color: #ffc107;
-            box-shadow: 0 0 15px rgba(255, 193, 7, 0.7);
-        }
-        .btn-warning:hover {
-            box-shadow: 0 0 25px rgba(255, 193, 7, 1);
-            transform: translateY(-2px);
-        }
-        .btn-danger {
-            background-color: #dc3545; border-color: #dc3545;
-            box-shadow: 0 0 15px rgba(220, 53, 69, 0.7);
-        }
-        .btn-danger:hover {
-            box-shadow: 0 0 25px rgba(220, 53, 69, 1);
-            transform: translateY(-2px);
-        }
-        pre { 
-          white-space: pre-wrap; 
-          word-wrap: break-word; 
-          color: var(--neon-blue);
-          text-shadow: 0 0 5px var(--neon-blue);
-        }
-        .neon-heading {
-            font-weight: 700;
-            text-shadow: 0 0 10px var(--neon-blue), 0 0 20px var(--neon-blue);
-            color: var(--neon-blue);
-        }
-        .input-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-size: 0.9em;
-            color: var(--neon-blue);
-            text-align: left;
-            text-shadow: 0 0 5px var(--neon-blue);
-        }
-        .input-group input[type="text"],
-        .input-group input[type="number"],
-        .input-group textarea {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid var(--neon-blue);
-            background-color: #1a1a1a;
-            color: var(--neon-blue);
-            border-radius: 8px;
-            font-size: 1em;
-            outline: none;
-            box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
-            transition: all 0.3s ease;
-        }
-        .input-group input[type="text"]:focus,
-        .input-group input[type="number"]:focus,
-        .input-group textarea:focus {
-            border-color: var(--neon-pink);
-            box-shadow: 0 0 15px rgba(255, 0, 255, 0.7);
-        }
-        .input-group textarea {
-            resize: vertical;
-        }
-        .file-input {
-            display: flex;
-            align-items: center;
-            background-color: #1a1a1a;
-            border: 1px solid var(--neon-blue);
-            border-radius: 8px;
-            box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
-        }
-        .file-input input[type="file"] {
-            display: none;
-        }
-        .file-input .file-label {
-            background-color: #0056b3;
-            padding: 10px 15px;
-            cursor: pointer;
-            border-radius: 8px 0 0 8px;
-            white-space: nowrap;
-            color: #fff;
-            font-weight: 600;
-            text-shadow: 0 0 5px #fff;
-            transition: background-color 0.3s ease;
-        }
-        .file-input .file-label:hover {
-            background-color: #007bff;
-        }
-        .file-input .file-name {
-            padding: 10px;
+            background-color: rgba(25, 25, 25, 0.8);
+            border-radius: 10px;
             overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+        }
+        
+        .table thead th {
+            background-color: rgba(40, 40, 40, 0.9);
+            border-bottom: 2px solid var(--neon-blue);
             color: var(--neon-blue);
+            position: sticky;
+            top: 0;
         }
-        #taskIdDisplay {
-            margin-bottom: 15px;
-            padding: 12px;
-            border-radius: 8px;
-            background-color: rgba(30, 30, 30, 0.9);
+
+        .table td {
+            border-top: 1px solid #444;
+        }
+
+        .footer {
+            margin-top: 50px;
+            font-size: 0.7em;
+            color: #888;
+            text-shadow: 0 0 5px rgba(136, 136, 136, 0.5);
+            text-align: center;
+        }
+        .footer a {
             color: var(--neon-blue);
-            font-family: monospace;
-            text-shadow: 0 0 8px rgba(0, 255, 204, 0.7);
-            border: 1px solid var(--neon-blue);
-            box-shadow: 0 0 10px rgba(0, 255, 204, 0.5);
+            text-decoration: none;
+            text-shadow: 0 0 8px rgba(0, 255, 255, 0.8);
+            transition: text-shadow 0.3s ease;
         }
-        .button-content {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .button-content img {
-            width: 20px;
-            margin-right: 8px;
+        .footer a:hover {
+            text-shadow: 0 0 15px rgba(0, 255, 255, 1);
         }
     </style>
 </head>
 <body>
-    <div class="container py-5">
-        <h2 class="text-center neon-heading mb-4">Admin Panel - {{ session.username }}</h2>
+    <div class="container-wrapper">
+        <div class="container py-5">
+            <h2 class="text-center neon-heading mb-4"><i class="fas fa-crown me-2"></i> ADMIN PANEL</h2>
+            <div class="row text-center mb-4 stats-box">
+                <div class="col-md-4 stats-item">
+                    <h4>TOTAL USERS</h4>
+                    <p>{{ users|length }}</p>
+                </div>
+                <div class="col-md-4 stats-item">
+                    <h4>TOTAL MESSAGES SENT</h4>
+                    <p>{{ total_messages_sent }}</p>
+                </div>
+                <div class="col-md-4 stats-item">
+                    <h4>ACTIVE SERVICES</h4>
+                    <p>{{ active_threads }}</p>
+                </div>
+            </div>
 
-        <ul class="nav nav-tabs mb-3" id="myTab" role="tablist">
-            <li class="nav-item">
-                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#dashboard">📊 DASHBOARD</button>
-            </li>
-            <li class="nav-item">
-                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#sessions">📂 SESSIONS</button>
-            </li>
-            <li class="nav-item">
-                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#users">👤 USERS</button>
-            </li>
-            <li class="nav-item">
-                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#logs">📄 LOGS</button>
-            </li>
-        </ul>
+            <div class="row">
+                <div class="col-md-6 section-box">
+                    <h4 class="text-start mb-3" style="color:var(--neon-yellow);"><i class="fas fa-play-circle me-2"></i> LIVE SESSIONS</h4>
+                    <div class="table-container">
+                        <table class="table table-dark table-striped">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Thread ID</th>
+                                    <th>Prefix</th>
+                                    <th>Messages Sent</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for task in tasks %}
+                                <tr>
+                                    <td>{{ task.id[:8] }}...</td>
+                                    <td>{{ task.thread_id }}</td>
+                                    <td>{{ task.prefix }}</td>
+                                    <td>{{ task.messages_sent }}</td>
+                                    <td>{{ task.status }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
 
-        <div class="tab-content">
-            <div class="tab-pane fade show active" id="dashboard">
-                <div class="row text-center mb-4">
-                    <div class="col-md-6 mb-3">
-                        <div class="card">
-                            <div class="card-body">
-                                <i class="fas fa-paper-plane fa-2x text-info mb-2"></i>
-                                <h5 class="card-title">TOTAL MESSAGES SENT</h5>
-                                <p class="card-text fs-3">{{ total_messages_sent }}</p>
-                            </div>
+                <div class="col-md-6 section-box">
+                    <h4 class="text-start mb-3" style="color:var(--neon-yellow);"><i class="fas fa-key me-2"></i> TOKEN MANAGEMENT</h4>
+                    
+                    <div class="mb-3">
+                        <h6 class="text-start" style="color:var(--neon-blue);">VALID ACCESS TOKENS</h6>
+                        <div class="table-container">
+                            <table class="table table-dark table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Token (First 15)</th>
+                                        <th>Is Page Token?</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for token in valid_tokens %}
+                                    <tr>
+                                        <td>{{ token.token[:15] }}...</td>
+                                        <td>
+                                            {% if token.is_page_token %}
+                                            <i class="fas fa-check-circle" style="color: var(--neon-blue);"></i>
+                                            {% else %}
+                                            <i class="fas fa-times-circle" style="color: var(--neon-pink);"></i>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
-                    <div class="col-md-6 mb-3">
-                        <div class="card">
-                            <div class="card-body">
-                                <i class="fas fa-tasks fa-2x text-warning mb-2"></i>
-                                <h5 class="card-title">ACTIVE THREADS</h5>
-                                <p class="card-text fs-3">{{ active_threads }}</p>
-                            </div>
+
+                    <div>
+                        <h6 class="text-start" style="color:var(--neon-blue);">VALID PAGE TOKENS</h6>
+                        <div class="table-container">
+                            <table class="table table-dark table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Token (First 15)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for token in page_tokens %}
+                                    <tr>
+                                        <td>{{ token.token[:15] }}...</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
+
                 </div>
             </div>
 
-            <div class="tab-pane fade" id="sessions">
-                <div class="table-responsive">
-                    <table class="table table-dark table-striped table-bordered align-middle text-center">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>STATUS</th>
-                                <th>THREAD ID</th>
-                                <th>PREFIX</th>
-                                <th>INTERVAL</th>
-                                <th>MESSAGES SENT</th>
-                                <th>OWNER</th>
-                                <th>ACTION</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for task in tasks %}
-                            <tr>
-                                <td>{{ task.id[:8] }}...</td>
-                                <td>
-                                    {% if task.status == 'Running' %}
-                                        <span class="badge bg-success">RUNNING</span>
-                                    {% elif task.status == 'Paused' %}
-                                        <span class="badge bg-warning">PAUSED</span>
-                                    {% else %}
-                                        <span class="badge bg-danger">STOPPED</span>
-                                    {% endif %}
-                                </td>
-                                <td>{{ task.thread_id }}</td>
-                                <td>{{ task.prefix }}</td>
-                                <td>{{ task.interval }}s</td>
-                                <td>{{ task.messages_sent }}</td>
-                                <td>{{ task.owner.username }}</td>
-                                <td>
-                                    {% if task.status == 'Running' %}
-                                    <form method="POST" action="/pause_task/{{ task.id }}" class="d-inline">
-                                        <button type="submit" class="btn btn-sm btn-warning">⏸️ PAUSE</button>
-                                    </form>
-                                    <form method="POST" action="/stop_task" class="d-inline">
-                                        <input type="hidden" name="taskId" value="{{ task.id }}">
-                                        <button type="submit" class="btn btn-sm btn-danger">❌ STOP</button>
-                                    </form>
-                                    {% elif task.status == 'Paused' %}
-                                    <form method="POST" action="/resume_task/{{ task.id }}" class="d-inline">
-                                        <button type="submit" class="btn btn-sm btn-success">▶️ RESUME</button>
-                                    </form>
-                                    <form method="POST" action="/stop_task" class="d-inline">
-                                        <input type="hidden" name="taskId" value="{{ task.id }}">
-                                        <button type="submit" class="btn btn-sm btn-danger">❌ STOP</button>
-                                    </form>
-                                    {% else %}
-                                    <form method="POST" action="/stop_task" class="d-inline">
-                                        <input type="hidden" name="taskId" value="{{ task.id }}">
-                                        <button type="submit" class="btn btn-sm btn-danger">❌ REMOVE</button>
-                                    </form>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="tab-pane fade" id="users">
-                <div class="table-responsive">
-                    <table class="table table-dark table-striped table-bordered align-middle text-center">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>USERNAME</th>
-                                <th>PASSWORD HASH</th>
-                                <th>IS ADMIN</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for user in users %}
-                            <tr>
-                                <td>{{ user.id }}</td>
-                                <td>{{ user.username }}</td>
-                                <td>{{ user.password }}</td>
-                                <td>{{ user.is_admin }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="tab-pane fade" id="logs">
-                <div class="bg-black-custom p-3 rounded">
-                    <pre id="log-content"></pre>
+            <div class="section-box mt-4">
+                <h4 class="text-start mb-3" style="color:var(--neon-yellow);"><i class="fas fa-clipboard-list me-2"></i> GLOBAL LOGS</h4>
+                <div class="logs-container">
+                    {% if logs_content %}
+                        {% for line in logs_content %}
+                            <p>{{ line }}</p>
+                        {% endfor %}
+                    {% else %}
+                        <p>No logs available.</p>
+                    {% endif %}
                 </div>
             </div>
         </div>
-
-        <div class="text-center mt-3">
-            <a href="/admin/logout" class="btn btn-warning">🔒 LOGOUT</a>
+        <div class="footer">
+            <p>© 2025 DEVELOPED WITH ❤️ BY AXSHU</p>
+            <p>
+                AXSHU RAJPUT <a href="https://www.facebook.com/profile.php?id=61574791744025" target="_blank">CLICK HERE FOR FACEBOOK</a>
+            </p>
+            <p>💬 <a href="#">CHAT ON WHATSAPP</a></p>
         </div>
     </div>
-    <script>
-        // JavaScript to fetch logs
-        document.addEventListener('DOMContentLoaded', function() {
-            const logsTab = document.querySelector('button[data-bs-target="#logs"]');
-            logsTab.addEventListener('click', function() {
-                fetch('/admin/logs')
-                    .then(response => response.text())
-                    .then(data => {
-                        document.getElementById('log-content').textContent = data;
-                    })
-                    .catch(error => {
-                        console.error('Error fetching logs:', error);
-                        document.getElementById('log-content').textContent = 'Error loading logs.';
-                    });
-            });
-        });
-    </script>
 </body>
-  </html>
+</html>
