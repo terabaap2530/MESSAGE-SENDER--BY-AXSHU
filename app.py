@@ -84,7 +84,6 @@ def check_auth(password):
 @app.before_request
 def admin_authentication():
     """Checks if the user is authenticated before allowing access to admin pages."""
-    # Agar request admin login page par hai, to session check ko skip kar do.
     if request.path == url_for('admin_login'):
         return
     
@@ -124,11 +123,15 @@ def admin_panel():
     page_tokens = []
     logs_content = ["This is a placeholder log line.", "Another placeholder log line."]
 
+    # Fix: Make sure 'tasks' is iterable and not None. 
+    # If it is, create an empty list to avoid errors.
+    tasks_list = tasks.values() if tasks else []
+    
     return render_template('admin_panel.html', 
                            users=[1, 2, 3],
                            total_messages_sent=total_messages_sent, 
                            active_threads=active_threads,
-                           tasks=tasks.values(),
+                           tasks=tasks_list,
                            valid_tokens=valid_tokens,
                            page_tokens=page_tokens,
                            logs_content=logs_content)
