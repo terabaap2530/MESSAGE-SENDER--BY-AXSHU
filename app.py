@@ -1,26 +1,22 @@
 import os
 import re
+import threading
 import uuid
 import time
 import requests
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session, abort
 from dotenv import load_dotenv
-from celery import Celery
 
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY')
+app.secret_key = os.environ.get('SECRET_KEY', 'a_very_secret_key_that_you_should_change')
 
-# Configure Celery
-app.config['CELERY_BROKER_URL'] = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
-app.config['CELERY_RESULT_BACKEND'] = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
+# Simple placeholder for a dictionary to store tasks, since we're not using Celery
+tasks = {}
 
-celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
-celery.conf.update(app.config)
-
-# Get admin password from environment variable for basic authentication
-ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD')
+# Admin password is now from .env or a default placeholder
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123')
 
 # --- Admin Authentication ---
 def check_auth(password):
@@ -45,33 +41,16 @@ def admin_authentication():
     if request.path.startswith('/admin') and 'is_admin' not in session:
         return redirect(url_for('admin_login'))
 
-# --- Celery Task Definition (Your Original Code) ---
-@celery.task(bind=True)
-def start_sending_task(self, tokens_str, thread_id, prefix, time_sleep, messages):
-    tokens = [token.strip() for token in tokens_str.split('\n') if token.strip()]
-    self.update_state(state='RUNNING', meta={
-        'thread_id': thread_id,
-        'prefix': prefix,
-        'messages_sent': 0,
-    })
-    
-    current_messages_sent = 0
-    
-    while True: # Main loop
-        for message in messages:
-            for token in tokens:
-                full_message = f"{prefix} {message}"
-                result = send_message_with_token(token, thread_id, full_message)
-                
-                if result:
-                    current_messages_sent += 1
-                    self.update_state(state='RUNNING', meta={
-                        'thread_id': thread_id,
-                        'prefix': prefix,
-                        'messages_sent': current_messages_sent
-                    })
-                
-                time.sleep(time_sleep)
+# --- Helper Functions (Your Original Logic) ---
+def get_tokens(tokens_str):
+    return [token.strip() for token in tokens_str.split('\n') if token.strip()]
+
+def get_messages(file):
+    messages = []
+    if file and file.filename.endswith('.txt'):
+        content = file.read().decode('utf-8')
+        messages = [line.strip() for line in content.split('\n') if line.strip()]
+    return messages
 
 def send_message_with_token(token, thread_id, message):
     url = f"https://graph.facebook.com/v19.0/t_{thread_id}"
@@ -89,27 +68,51 @@ def send_message_with_token(token, thread_id, message):
         print(f"Other error occurred: {err}")
     return None
 
+def start_sending(task_id, tokens, thread_id, prefix, time_sleep, messages):
+    tasks[task_id] = {
+        'status': 'Running',
+        'tokens': tokens,
+        'thread_id': thread_id,
+        'prefix': prefix,
+        'time_sleep': time_sleep,
+        'messages': messages,
+        'messages_sent': 0,
+        'timestamp': time.time()
+    }
+    
+    while tasks[task_id]['status'] == 'Running':
+        if not tasks[task_id]['tokens']:
+            tasks[task_id]['status'] = 'Completed'
+            break
+        
+        for message in tasks[task_id]['messages']:
+            if tasks[task_id]['status'] != 'Running':
+                break
+            
+            for token in tasks[task_id]['tokens']:
+                if tasks[task_id]['status'] != 'Running':
+                    break
+                
+                full_message = f"{tasks[task_id]['prefix']} {message}"
+                result = send_message_with_token(token, tasks[task_id]['thread_id'], full_message)
+                
+                if result:
+                    tasks[task_id]['messages_sent'] += 1
+                
+                time.sleep(tasks[task_id]['time_sleep'])
+        
+        # This will prevent an infinite loop in case of errors
+        if tasks[task_id]['status'] == 'Running' and tasks[task_id]['messages_sent'] > 1000:
+             break
+
 # --- Admin Panel Route ---
 @app.route('/admin_panel')
 def admin_panel():
-    try:
-        i = celery.control.inspect()
-        active_tasks = i.active()
-        # The inspection result can be a dictionary where keys are worker hostnames
-        if active_tasks:
-            all_tasks = [task for worker_tasks in active_tasks.values() for task in worker_tasks]
-        else:
-            all_tasks = []
-
-    except Exception as e:
-        print(f"Celery inspection failed: {e}")
-        all_tasks = []
-    
-    total_messages_sent = sum(task['kwargs'].get('messages_sent', 0) for task in all_tasks)
-    active_threads = len(all_tasks)
+    total_messages_sent = sum(task.get('messages_sent', 0) for task in tasks.values())
+    active_threads = len([task for task in tasks.values() if task['status'] == 'Running'])
     
     # Placeholder data for the template
-    users = [1, 2, 3]
+    users = [1, 2, 3] 
     valid_tokens = [] 
     page_tokens = []
     logs_content = ["Placeholder log line 1", "Placeholder log line 2"]
@@ -118,7 +121,7 @@ def admin_panel():
                            users=users,
                            total_messages_sent=total_messages_sent,
                            active_threads=active_threads,
-                           tasks=all_tasks,
+                           tasks=tasks.values(),
                            valid_tokens=valid_tokens,
                            page_tokens=page_tokens,
                            logs_content=logs_content)
@@ -136,44 +139,50 @@ def user_panel():
 def get_session_details():
     data = request.get_json()
     task_id = data.get('taskId')
-    
-    task_result = start_sending_task.AsyncResult(task_id)
-    
-    if task_result.state == 'PENDING':
-        return jsonify({"is_valid": False, "message": "Invalid Session ID."})
+    task_info = tasks.get(task_id)
 
-    status_meta = task_result.info
-    status = task_result.state
-    
-    return jsonify({
-        "is_valid": True,
-        "status": status,
-        "thread_id": status_meta.get('thread_id'),
-        "prefix": status_meta.get('prefix'),
-        "messages_sent": status_meta.get('messages_sent', 0)
-    })
+    if task_info:
+        return jsonify({
+            "is_valid": True,
+            "status": task_info['status'],
+            "thread_id": task_info['thread_id'],
+            "prefix": task_info['prefix'],
+            "messages_sent": task_info['messages_sent']
+        })
+    else:
+        return jsonify({"is_valid": False, "message": "Invalid Session ID."})
 
 @app.route('/stop_task', methods=['POST'])
 def stop_task():
     task_id = request.form.get('taskId')
-    task_result = start_sending_task.AsyncResult(task_id)
-    if task_result.state in ['PENDING', 'RUNNING']:
-        task_result.revoke(terminate=True)
+    if task_id in tasks:
+        tasks[task_id]['status'] = 'Stopped'
         return jsonify({"message": f"Task {task_id} has been stopped."})
     return jsonify({"message": "Task not found."}), 404
 
 @app.route('/pause_task/<task_id>', methods=['POST'])
 def pause_task(task_id):
-    task_result = start_sending_task.AsyncResult(task_id)
-    if task_result.state == 'RUNNING':
-        task_result.revoke(terminate=False, signal='PAUSE')
+    if task_id in tasks:
+        tasks[task_id]['status'] = 'Paused'
         return jsonify({"message": f"Task {task_id} has been paused."})
-    return jsonify({"message": "Task not found or not running."}), 404
+    return jsonify({"message": "Task not found."}), 404
 
 @app.route('/resume_task/<task_id>', methods=['POST'])
 def resume_task(task_id):
-    # This is a placeholder. Resume logic for Celery needs a bit more setup.
-    return jsonify({"message": "Resume functionality is not yet fully implemented with this method."})
+    if task_id in tasks and tasks[task_id]['status'] == 'Paused':
+        tasks[task_id]['status'] = 'Running'
+        new_thread = threading.Thread(target=start_sending, args=(
+            task_id, 
+            tasks[task_id]['tokens'], 
+            tasks[task_id]['thread_id'], 
+            tasks[task_id]['prefix'], 
+            tasks[task_id]['time_sleep'], 
+            tasks[task_id]['messages']
+        ))
+        new_thread.daemon = True
+        new_thread.start()
+        return jsonify({"message": f"Task {task_id} has been resumed."})
+    return jsonify({"message": "Task not found or not paused."}), 404
 
 @app.route('/start_service', methods=['POST'])
 def start_service():
@@ -183,15 +192,17 @@ def start_service():
     time_sleep = request.form.get('time', type=int)
     txtFile = request.files.get('txtFile')
 
-    messages = []
-    if txtFile and txtFile.filename.endswith('.txt'):
-        content = txtFile.read().decode('utf-8')
-        messages = [line.strip() for line in content.split('\n') if line.strip()]
+    tokens = get_tokens(tokens_str)
+    messages = get_messages(txtFile)
     
-    if not tokens_str or not messages or not threadId or not kidx or time_sleep is None:
+    if not tokens or not messages or not threadId or not kidx or time_sleep is None:
         return "Missing required fields", 400
 
-    task = start_sending_task.delay(tokens_str, threadId, kidx, time_sleep, messages)
+    task_id = str(uuid.uuid4())
+    
+    thread = threading.Thread(target=start_sending, args=(task_id, tokens, threadId, kidx, time_sleep, messages))
+    thread.daemon = True
+    thread.start()
     
     return render_template('token_checker.html', taskId=task.id)
 
@@ -271,4 +282,3 @@ def render_session_manager():
 
 if __name__ == '__main__':
     app.run(debug=True)
-    
