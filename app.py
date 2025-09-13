@@ -116,17 +116,17 @@ def user_service():
 
 @app.route('/admin_panel')
 def admin_panel():
-    total_messages_sent = sum(task.get('messages_sent', 0) for task in tasks.values())
-    active_threads = len([task for task in tasks.values() if task['status'] == 'Running'])
+    # Fix: Make sure 'tasks' is iterable and not None. 
+    # If it is, create an empty list to avoid errors.
+    tasks_list = tasks.values() if tasks else []
+
+    total_messages_sent = sum(task.get('messages_sent', 0) for task in tasks_list)
+    active_threads = len([task for task in tasks_list if task['status'] == 'Running'])
     
     valid_tokens = []
     page_tokens = []
     logs_content = ["This is a placeholder log line.", "Another placeholder log line."]
 
-    # Fix: Make sure 'tasks' is iterable and not None. 
-    # If it is, create an empty list to avoid errors.
-    tasks_list = tasks.values() if tasks else []
-    
     return render_template('admin_panel.html', 
                            users=[1, 2, 3],
                            total_messages_sent=total_messages_sent, 
@@ -284,3 +284,4 @@ def render_session_manager():
 if __name__ == '__main__':
     app.run(debug=True)
 
+                        
