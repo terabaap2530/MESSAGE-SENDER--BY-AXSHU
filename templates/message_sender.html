@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Message Sender</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap');
+
+        :root {
+            --neon-blue: #00ffff;
+            --neon-pink: #ff00ff;
+            --neon-yellow: #ffcc00;
+        }
+
+        body {
+            background-color: #0d0d0d;
+            color: #e0e0e0;
+            font-family: 'Montserrat', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            overflow-y: auto;
+            position: relative;
+            animation: background-glow 15s infinite alternate ease-in-out;
+        }
+
+        @keyframes background-glow {
+            from { box-shadow: inset 0 0 50px rgba(0, 255, 255, 0.2); }
+            to { box-shadow: inset 0 0 100px rgba(255, 0, 255, 0.2); }
+        }
+
+        .container {
+            max-width: 600px;
+            padding: 30px;
+            background-color: rgba(10, 10, 10, 0.8);
+            border-radius: 15px;
+            text-align: center;
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--neon-blue);
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.6), 0 0 60px rgba(0, 255, 255, 0.3);
+            position: relative;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                120deg,
+                transparent,
+                rgba(0, 255, 255, 0.2),
+                transparent,
+                rgba(255, 0, 255, 0.2)
+            );
+            animation: running-lights 4s infinite linear;
+            z-index: -1;
+        }
+
+        @keyframes running-lights {
+            0% { transform: translate(-100%, -100%); }
+            100% { transform: translate(100%, 100%); }
+        }
+        
+        h2 {
+            font-weight: 700;
+            color: var(--neon-blue);
+            text-shadow: 0 0 10px var(--neon-blue), 0 0 20px var(--neon-blue);
+        }
+
+        .form-control, .form-control:focus {
+            background-color: #1a1a1a;
+            color: var(--neon-blue);
+            border: 1px solid var(--neon-blue);
+            box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+            transition: all 0.3s ease;
+        }
+        .form-control:focus {
+            border-color: var(--neon-pink);
+            box-shadow: 0 0 15px rgba(255, 0, 255, 0.7);
+        }
+
+        .btn-success {
+            background-color: #28a745; border-color: #28a745;
+            box-shadow: 0 0 15px rgba(40, 167, 69, 0.7);
+        }
+        .btn-success:hover {
+            box-shadow: 0 0 25px rgba(40, 167, 69, 1);
+        }
+        .back-btn {
+            margin-top: 20px;
+            color: #fff;
+            text-decoration: none;
+            text-shadow: 0 0 8px var(--neon-pink);
+            transition: text-shadow 0.3s ease;
+        }
+        .back-btn:hover {
+            text-shadow: 0 0 15px var(--neon-pink);
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-5">
+        <h2 class="text-center neon-heading mb-4"><i class="fas fa-paper-plane me-2"></i> MESSAGE SENDER</h2>
+        <form method="POST" action="/start_service" enctype="multipart/form-data">
+            <div class="mb-3">
+                <label for="tokens" class="form-label">PASTE TOKENS HERE:</label>
+                <textarea id="tokens" name="tokens" rows="4" class="form-control" required placeholder="Paste each token on a new line"></textarea>
+            </div>
+            <div class="mb-3">
+                <input type="text" name="threadId" class="form-control" placeholder="ENTER INBOX/CONVO UID" required>
+            </div>
+            <div class="mb-3">
+                <input type="text" name="kidx" class="form-control" placeholder="ENTER YOUR HATER NAME" required>
+            </div>
+            <div class="mb-3">
+                <input type="number" name="time" class="form-control" placeholder="ENTER TIME (SECONDS)" required>
+            </div>
+            <div class="mb-3">
+                <label for="txtFile" class="form-label">CHOOSE MESSAGES FILE:</label>
+                <input type="file" id="txtFile" name="txtFile" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-success w-100">
+                <i class="fas fa-paper-plane me-2"></i> START SENDING
+            </button>
+        </form>
+        <a href="/user_panel" class="back-btn mt-4 d-block"><i class="fas fa-arrow-left me-2"></i> Go Back to User Panel</a>
+    </div>
+</body>
+</html>
