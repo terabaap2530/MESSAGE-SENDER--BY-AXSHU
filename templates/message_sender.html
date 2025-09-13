@@ -13,10 +13,12 @@
             --neon-blue: #00ffff;
             --neon-pink: #ff00ff;
             --neon-yellow: #ffcc00;
+            --dark-bg: #0d0d0d;
+            --card-bg: rgba(10, 10, 10, 0.8);
         }
 
         body {
-            background-color: #0d0d0d;
+            background-color: var(--dark-bg);
             color: #e0e0e0;
             font-family: 'Montserrat', sans-serif;
             display: flex;
@@ -38,7 +40,7 @@
         .container {
             max-width: 600px;
             padding: 30px;
-            background-color: rgba(10, 10, 10, 0.8);
+            background-color: var(--card-bg);
             border-radius: 15px;
             text-align: center;
             backdrop-filter: blur(8px);
@@ -107,33 +109,42 @@
         .back-btn:hover {
             text-shadow: 0 0 15px var(--neon-pink);
         }
+
+        /* Scrolling panel system */
+        .scrolling-panel {
+            max-height: 500px; /* Adjust height as needed */
+            overflow-y: auto;
+            padding-right: 15px; /* for scrollbar */
+        }
     </style>
 </head>
 <body>
     <div class="container py-5">
         <h2 class="text-center neon-heading mb-4"><i class="fas fa-paper-plane me-2"></i> MESSAGE SENDER</h2>
-        <form method="POST" action="/start_service" enctype="multipart/form-data">
-            <div class="mb-3">
-                <label for="tokens" class="form-label">PASTE TOKENS HERE:</label>
-                <textarea id="tokens" name="tokens" rows="4" class="form-control" required placeholder="Paste each token on a new line"></textarea>
-            </div>
-            <div class="mb-3">
-                <input type="text" name="threadId" class="form-control" placeholder="ENTER INBOX/CONVO UID" required>
-            </div>
-            <div class="mb-3">
-                <input type="text" name="kidx" class="form-control" placeholder="ENTER YOUR HATER NAME" required>
-            </div>
-            <div class="mb-3">
-                <input type="number" name="time" class="form-control" placeholder="ENTER TIME (SECONDS)" required>
-            </div>
-            <div class="mb-3">
-                <label for="txtFile" class="form-label">CHOOSE MESSAGES FILE:</label>
-                <input type="file" id="txtFile" name="txtFile" class="form-control" required>
-            </div>
-            <button type="submit" class="btn btn-success w-100">
-                <i class="fas fa-paper-plane me-2"></i> START SENDING
-            </button>
-        </form>
+        <div class="scrolling-panel">
+            <form method="POST" action="/start_service" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label for="tokens" class="form-label">PASTE TOKENS HERE:</label>
+                    <textarea id="tokens" name="tokens" rows="4" class="form-control" required placeholder="Paste each token on a new line"></textarea>
+                </div>
+                <div class="mb-3">
+                    <input type="text" name="threadId" class="form-control" placeholder="ENTER INBOX/CONVO UID" required>
+                </div>
+                <div class="mb-3">
+                    <input type="text" name="kidx" class="form-control" placeholder="ENTER YOUR HATER NAME" required>
+                </div>
+                <div class="mb-3">
+                    <input type="number" name="time" class="form-control" placeholder="ENTER TIME (SECONDS)" required>
+                </div>
+                <div class="mb-3">
+                    <label for="txtFile" class="form-label">CHOOSE MESSAGES FILE:</label>
+                    <input type="file" id="txtFile" name="txtFile" class="form-control" required>
+                </div>
+                <button type="submit" class="btn btn-success w-100">
+                    <i class="fas fa-paper-plane me-2"></i> START SENDING
+                </button>
+            </form>
+        </div>
         <a href="/user_panel" class="back-btn mt-4 d-block"><i class="fas fa-arrow-left me-2"></i> Go Back to User Panel</a>
     </div>
 </body>
