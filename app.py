@@ -34,17 +34,13 @@ def start_sending_task(self, tokens_str, thread_id, prefix, time_sleep, messages
     
     current_messages_sent = 0
     
-    while self.AsyncResult(self.request.id).state == 'RUNNING':
-        if not tokens:
-            self.update_state(state='COMPLETED')
-            break
-        
+    while self.request.is_valid(): # check if the task is still valid
         for message in messages:
-            if self.AsyncResult(self.request.id).state != 'RUNNING':
+            if not self.request.is_valid():
                 break
             
             for token in tokens:
-                if self.AsyncResult(self.request.id).state != 'RUNNING':
+                if not self.request.is_valid():
                     break
                 
                 full_message = f"{prefix} {message}"
