@@ -90,7 +90,8 @@ def admin_authentication():
     if request.path.startswith('/admin') and 'is_admin' not in session:
         return redirect(url_for('admin_login'))
 
-@app.route('/admin_login', methods=['GET', 'POST'])
+# `admin_login` route ko `/admin/login` mein badla gaya
+@app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     """Renders a simple login form for the admin panel and handles login."""
     if request.method == 'POST':
@@ -116,10 +117,7 @@ def user_service():
 
 @app.route('/admin_panel')
 def admin_panel():
-    # Fix: Make sure 'tasks' is iterable and not None. 
-    # If it is, create an empty list to avoid errors.
     tasks_list = tasks.values() if tasks else []
-
     total_messages_sent = sum(task.get('messages_sent', 0) for task in tasks_list)
     active_threads = len([task for task in tasks_list if task['status'] == 'Running'])
     
@@ -284,4 +282,3 @@ def render_session_manager():
 if __name__ == '__main__':
     app.run(debug=True)
 
-                        
