@@ -73,7 +73,6 @@ def start_sending(task_id, tokens, thread_id, prefix, time_sleep, messages):
                 
                 time.sleep(tasks[task_id]['time_sleep'])
         
-        # This will prevent an infinite loop in case of errors
         if tasks[task_id]['status'] == 'Running' and tasks[task_id]['messages_sent'] > 1000:
              break
 
@@ -84,10 +83,6 @@ def index():
 @app.route('/user_panel')
 def user_panel():
     return render_template('user_panel.html')
-
-@app.route('/user_service')
-def user_service():
-    return render_template('user_service.html')
 
 @app.route('/get_session_details', methods=['POST'])
 def get_session_details():
