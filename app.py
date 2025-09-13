@@ -90,7 +90,7 @@ def admin_authentication():
     if request.path.startswith('/admin') and 'is_admin' not in session:
         return redirect(url_for('admin_login'))
 
-@app.route('/admin_login', methods=['GET', 'POST'])
+@app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     """Renders a simple login form for the admin panel and handles login."""
     if request.method == 'POST':
@@ -187,12 +187,11 @@ def start_service():
     tokens_str = request.form.get('tokens')
     threadId = request.form.get('threadId')
     kidx = request.form.get('kidx')
-    time_sleep = request.form.get('time')
+    time_sleep_str = request.form.get('time')
     txtFile = request.files.get('txtFile')
 
-    # Fix: `time_sleep` value ko integer mein badalna aur default value dena
     try:
-        time_sleep = int(time_sleep) if time_sleep else 0
+        time_sleep = int(time_sleep_str) if time_sleep_str and time_sleep_str.isdigit() else 0
     except (ValueError, TypeError):
         return "Invalid time format.", 400
 
