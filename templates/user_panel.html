@@ -195,6 +195,12 @@
             text-shadow: 0 0 8px var(--neon-pink);
         }
 
+        .modal {
+            z-index: 1050; /* Ensure modal is on top of other content */
+        }
+        .modal-backdrop {
+            z-index: 1040; /* Make sure the backdrop is below the modal */
+        }
         .modal-content {
             background-color: #1a1a1a;
             border: 1px solid var(--neon-pink);
@@ -203,6 +209,7 @@
         }
         .modal-header {
             border-bottom: 1px solid var(--neon-pink);
+            z-index: 1051;
         }
         .modal-title {
             color: var(--neon-yellow);
